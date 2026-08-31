@@ -1,656 +1,655 @@
-# Modelo de Dominio - NexusMarket
+# Domain Model - NexusMarket
 
-## 1. Introducción
+## 1. Introduction
 
-NexusMarket es una plataforma digital centralizada que actúa como intermediario comercial entre compradores y vendedores. Su propósito principal es administrar de manera integral la operación del marketplace, desde el registro de usuarios y la publicación de productos hasta la logística, la facturación y la atención postventa. El sistema garantiza trazabilidad, coordinación y cumplimiento operacional entre todos los actores del ecosistema.
+NexusMarket is a centralized digital platform that acts as a commercial intermediary between buyers and sellers. Its main purpose is to comprehensively manage marketplace operations, from user registration and product publication to logistics, billing, and post-sale service. The system guarantees traceability, coordination, and operational compliance among all ecosystem actors.
 
-El dominio de negocio se centra en la gestión de una red comercial multiusuario donde cada participante desempeña un rol específico y donde la plataforma asume responsabilidad operativa en la mediación de transacciones, coordinación de entregas y control de la información financiera y logística.
+The business domain focuses on managing a multi-user commercial network where each participant plays a specific role and where the platform assumes operational responsibility in transaction mediation, delivery coordination, and control of financial and logistics information.
 
-### Objetivos estratégicos del sistema
+### Strategic system objectives
 
-- Administrar la información completa de usuarios del marketplace.
-- Gestionar el registro y administración de vendedores.
-- Administrar compradores registrados.
-- Controlar la información de bodegas y ubicaciones logísticas.
-- Gestionar el catálogo de productos y sus variaciones.
-- Administrar el inventario distribuido.
-- Gestionar el carrito de compras.
-- Controlar el ciclo completo de los pedidos.
-- Administrar la facturación de compras.
-- Gestionar procesos logísticos y entregas.
-- Administrar devoluciones y reembolsos.
-- Consolidar información administrativa para consulta y toma de decisiones.
+- Manage complete marketplace user information.
+- Manage seller registration and administration.
+- Manage registered buyers.
+- Control warehouse and logistics location information.
+- Manage product catalog and its variations.
+- Manage distributed inventory.
+- Manage shopping cart.
+- Control the complete order cycle.
+- Manage purchase billing.
+- Manage logistics processes and deliveries.
+- Manage returns and refunds.
+- Consolidate administrative information for consultation and decision-making.
 
-### Visión funcional del dominio
+### Functional domain vision
 
-El dominio se compone de varias áreas de negocio interrelacionadas:
+The domain consists of several interrelated business areas:
 
-- Identidad y usuarios
-- Gestión comercial de vendedores
-- Catálogo y productos
-- Inventario y bodegas
-- Compra y carrito
-- Pedidos y estados
-- Facturación y pagos
-- Logística y entregas
-- Devoluciones y reembolsos
-- Información administrativa y analytics
+- Identity and users
+- Seller commercial management
+- Catalog and products
+- Inventory and warehouses
+- Purchase and cart
+- Orders and statuses
+- Billing and payments
+- Logistics and deliveries
+- Returns and refunds
+- Administrative information and analytics
 
-Desde una perspectiva DDD, NexusMarket se modela como un sistema con múltiples subdominios, entidades de negocio robustas, objetos de valor bien definidos y agregados que preservan consistencia dentro de cada contexto.
+From a DDD perspective, NexusMarket is modeled as a system with multiple subdomains, robust business entities, well-defined value objects, and aggregates that maintain consistency within each context.
 
-## Participantes del Negocio
+## Business Participants
 
-Cada participante desempeña un único rol dentro del sistema y únicamente podrá interactuar con la información correspondiente a sus funciones.
+Each participant plays a unique role within the system and can only interact with information corresponding to their functions.
 
-| Participante | Descripción General |
+| Participant | General Description |
 |---|---|
-| Comprador | Persona que adquiere productos publicados. |
-| Vendedor | Responsable de registrar y administrar sus productos. |
-| Operador Logístico | Encargado de la operación física de bodegas y despachos. |
-| Administrador | Responsable de la administración de vendedores y bodegas. |
-| Supervisor | Perfil de consulta y seguimiento operativo. |
+| Buyer | Person who purchases published products. |
+| Seller | Responsible for registering and managing their products. |
+| Logistics Operator | In charge of physical warehouse and dispatch operations. |
+| Administrator | Responsible for seller and warehouse administration. |
+| Supervisor | Profile for consultation and operational monitoring. |
 
-### Regla de acceso por rol
+### Access rule by role
 
-- Cada usuario del sistema debe estar asociado a un único rol de negocio.
-- El acceso a información y procesos está determinado por el rol asignado.
-- Los compradores solo pueden gestionar su historial, carrito, compras y soporte asociado.
-- Los vendedores solo pueden administrar sus productos, inventarios y pedidos asociados a su operación comercial.
-- Los operadores logísticos solo pueden operar sobre bodegas, envíos y trazabilidad física.
-- Los administradores tienen permisos de configuración y control operativo del marketplace.
-- Los supervisores tienen acceso de consulta y seguimiento, pero no realizan operaciones de negocio críticas de compra, venta o despacho.
+- Each system user must be associated with a unique business role.
+- Access to information and processes is determined by the assigned role.
+- Buyers can only manage their history, cart, purchases, and associated support.
+- Sellers can only manage their products, inventories, and orders associated with their commercial operations.
+- Logistics operators can only operate on warehouses, shipments, and physical traceability.
+- Administrators have configuration permissions and operational control of the marketplace.
+- Supervisors have access to consultation and monitoring, but do not perform critical business operations for purchase, sale, or dispatch.
 
 ---
 
-## 2. Jerarquía de Clases del Dominio
+## 2. Domain Class Hierarchy
 
-La siguiente jerarquía representa la estructura conceptual del dominio del marketplace, organizada por agregados y componentes funcionales:
+The following hierarchy represents the conceptual structure of the marketplace domain, organized by aggregates and functional components:
 
 ```text
 NexusMarket
-├── Usuario
-│   ├── Comprador
-│   │   ├── CarritoCompra
-│   │   ├── DireccionEntrega
-│   │   ├── MetodoPago
-│   │   └── HistorialCompras
-│   └── Vendedor
-│       ├── PerfilVendedor
-│       ├── Tienda
-│       ├── Bodega
-│       ├── CatalogoProductos
-│       ├── Inventario
-│       └── CuentaComercial
-├── Producto
-│   ├── CategoriaProducto
-│   ├── VarianteProducto
-│   ├── AtributoProducto
-│   ├── PrecioProducto
-│   └── EstadoProducto
-├── Pedido
-│   ├── LineaPedido
-│   ├── EstadoPedido
-│   ├── Factura
-│   ├── Pago
-│   ├── Envio
-│   └── Devolucion
-├── Bodega
-│   ├── UbicacionBodega
-│   ├── StockProducto
-│   ├── MovimientoInventario
-│   └── ReservaInventario
-├── Logistica
-│   ├── Transportadora
-│   ├── RutaEntrega
-│   ├── SeguimientoEnvio
-│   └── EstadoEntrega
-├── Facturacion
-│   ├── Factura
-│   ├── Impuesto
-│   ├── ComisionMarketplace
-│   └── LiquidacionVendedor
-├── Postventa
-│   ├── Devolucion
-│   ├── Reembolso
-│   ├── Reclamo
-│   └── ResolucionDisputa
-├── Administracion
-│   ├── DashboardOperativo
-│   ├── ReporteGeneral
-│   ├── Auditoria
-│   └── ConsolidadoComercial
-└── DominioCompartido
-    ├── Moneda
-    ├── DocumentoIdentidad
-    ├── EstadoGenerico
-    └── Notificacion
+├── User
+│   ├── Buyer
+│   │   ├── ShoppingCart
+│   │   ├── DeliveryAddress
+│   │   ├── PaymentMethod
+│   │   └── PurchaseHistory
+│   └── Seller
+│       ├── SellerProfile
+│       ├── Store
+│       ├── Warehouse
+│       ├── ProductCatalog
+│       ├── Inventory
+│       └── CommercialAccount
+├── Product
+│   ├── ProductCategory
+│   ├── ProductVariant
+│   ├── ProductAttribute
+│   ├── ProductPrice
+│   └── ProductStatus
+├── Order
+│   ├── OrderLine
+│   ├── OrderStatus
+│   ├── Invoice
+│   ├── Payment
+│   ├── Shipment
+│   └── Return
+├── Warehouse
+│   ├── WarehouseLocation
+│   ├── ProductStock
+│   ├── InventoryMovement
+│   └── InventoryReservation
+├── Logistics
+│   ├── Carrier
+│   ├── DeliveryRoute
+│   ├── ShipmentTracking
+│   └── DeliveryStatus
+├── Billing
+│   ├── Invoice
+│   ├── Tax
+│   ├── MarketplaceCommission
+│   └── SellerSettlement
+├── PostSale
+│   ├── Return
+│   ├── Refund
+│   ├── Claim
+│   └── DisputeResolution
+├── Administration
+│   ├── OperativeDashboard
+│   ├── GeneralReport
+│   ├── Audit
+│   └── CommercialConsolidated
+└── SharedDomain
+    ├── Currency
+    ├── IdentityDocument
+    ├── GenericStatus
+    └── Notification
 ```
 
-Esta jerarquía expresa la composición del dominio como un conjunto de agregados de negocio, con especial énfasis en las responsabilidades de usuario, catálogo, compras, logística, facturación y administración.
+This hierarchy expresses the composition of the domain as a set of business aggregates, with special emphasis on the responsibilities of user, catalog, purchases, logistics, billing, and administration.
 
 ---
 
-## 3. Relaciones del Dominio
+## 3. Domain Relationships
 
-El dominio de NexusMarket se estructura alrededor de relaciones entre entidades y agregados. A continuación se presenta el mapeo principal de las relaciones del negocio:
+The NexusMarket domain is structured around relationships between entities and aggregates. The following presents the main mapping of business relationships:
 
-### 3.1 Relación Usuario - Comprador
+### 3.1 User - Buyer Relationship
 
-- Un `Usuario` puede ser registrado como `Comprador`.
-- Un comprador puede tener múltiples `DireccionesEntrega`.
-- Un comprador puede tener varios `MetodosPago`.
-- Un comprador puede generar múltiples `Pedidos`.
-- Un comprador puede tener un historial de compras y valoraciones.
+- A `User` can be registered as a `Buyer`.
+- A buyer can have multiple `DeliveryAddresses`.
+- A buyer can have several `PaymentMethods`.
+- A buyer can generate multiple `Orders`.
+- A buyer can have a purchase history and ratings.
 
-### 3.2 Relación Usuario - Vendedor
+### 3.2 User - Seller Relationship
 
-- Un `Usuario` puede ser registrado como `Vendedor`.
-- Un vendedor puede poseer una o varias `Tiendas`.
-- Un vendedor puede administrar varias `Bodegas`.
-- Un vendedor puede publicar múltiples `Productos`.
-- Un vendedor puede tener una `CuentaComercial` para liquidaciones y comisiones.
+- A `User` can be registered as a `Seller`.
+- A seller can own one or several `Stores`.
+- A seller can manage several `Warehouses`.
+- A seller can publish multiple `Products`.
+- A seller can have a `CommercialAccount` for settlements and commissions.
 
-### 3.3 Relación Vendedor - Producto
+### 3.3 Seller - Product Relationship
 
-- Un vendedor publica uno o varios productos.
-- Cada producto pertenece a una categoría.
-- Un producto puede tener múltiples `VariantesProducto`.
-- Un producto puede estar asociado a registros de stock y disponibilidad por bodega.
+- A seller publishes one or more products.
+- Each product belongs to a category.
+- A product can have multiple `ProductVariants`.
+- A product can be associated with stock records and availability per warehouse.
 
-### 3.4 Relación Producto - Inventario
+### 3.4 Product - Inventory Relationship
 
-- Un producto está asociado a registros de inventario.
-- El inventario es gestionado por bodega.
-- El sistema valida disponibilidad real antes de confirmar un carrito o un pedido.
-- El stock puede ser actualizado por movimientos de entrada/salida.
+- A product is associated with inventory records.
+- Inventory is managed by warehouse.
+- The system validates real availability before confirming a cart or order.
+- Stock can be updated by entry/exit movements.
 
-### 3.5 Relación Comprador - Carrito - Pedido
+### 3.5 Buyer - Cart - Order Relationship
 
-- Un comprador crea un `CarritoCompra`.
-- El carrito acumula líneas de compra (`LineaCarrito`).
-- Cuando el comprador confirma la compra, el carrito se convierte en un `Pedido`.
-- El pedido crea una orden de compra vinculada a producto, cantidades, valor y logística.
+- A buyer creates a `ShoppingCart`.
+- The cart accumulates purchase lines (`CartLine`).
+- When the buyer confirms the purchase, the cart becomes an `Order`.
+- The order creates a purchase order linked to product, quantities, value, and logistics.
 
-### 3.6 Relación Pedido - Factura - Pago
+### 3.6 Order - Invoice - Payment Relationship
 
-- Un pedido genera una `Factura` cuando transcurre la compra.
-- El pedido requiere un `Pago` asociado.
-- El pago puede estar en estado pendiente, autorizado, rechazado o reembolsado.
-- La factura refleja impuestos, totales y comisiones del marketplace.
+- An order generates an `Invoice` when the purchase is completed.
+- The order requires an associated `Payment`.
+- Payment can be in pending, authorized, rejected, or refunded status.
+- The invoice reflects taxes, totals, and marketplace commissions.
 
-### 3.7 Relación Pedido - Logística
+### 3.7 Order - Logistics Relationship
 
-- Un pedido puede generar una o varias `OrdenesEntrega`.
-- El envío se asocia a una dirección de entrega y una transportadora.
-- El estado del envío se actualiza durante el ciclo de entrega.
-- La logística puede requerir coordinación con la bodega y el vendedor.
+- An order can generate one or several `DeliveryOrders`.
+- The shipment is associated with a delivery address and a carrier.
+- The shipment status is updated during the delivery cycle.
+- Logistics may require coordination with the warehouse and seller.
 
-### 3.8 Relación Pedido - Postventa
+### 3.8 Order - Post-Sale Relationship
 
-- Un pedido puede tener devoluciones, reclamos y reembolsos.
-- Una devolución está asociada a un motivo, un estado y una evaluación del caso.
-- La plataforma puede emitir una resolución de disputa o un cierre de caso.
+- An order can have returns, claims, and refunds.
+- A return is associated with a reason, status, and case evaluation.
+- The platform can issue a dispute resolution or case closure.
 
 ---
 
-## 4. Entidades Detalladas
+## 4. Detailed Entities
 
-A continuación se describen las entidades principales del dominio, con sus atributos, tipo de dato, responsabilidades y reglas clave.
+The following describes the main domain entities, with their attributes, data type, responsibilities, and key rules.
 
-### 4.1 Usuario
+### 4.1 User
 
-| Atributo | Tipo | Descripción |
+| Attribute | Type | Description |
 |---|---|---|
-| idUsuario | UUID | Identificador único del usuario. |
-| tipoUsuario | Enum | Puede ser Comprador, Vendedor o Administrador. |
-| nombre | String | Nombre principal del usuario. |
-| apellido | String | Apellido principal del usuario. |
-| email | String | Correo electrónico de acceso. |
-| telefono | String | Número de contacto. |
-| documentoIdentidad | DocumentoIdentidad | Tipo y número de documento. |
-| fechaRegistro | DateTime | Fecha en que el usuario fue creado. |
-| estado | EstadoUsuario | Estado del usuario dentro del sistema. |
-| fechaActualizacion | DateTime | Fecha de última modificación. |
+| userId | UUID | Unique user identifier. |
+| userType | Enum | Can be Buyer, Seller, or Administrator. |
+| firstName | String | User's first name. |
+| lastName | String | User's last name. |
+| email | String | Email for access. |
+| phone | String | Contact number. |
+| identityDocument | IdentityDocument | Document type and number. |
+| registrationDate | DateTime | Date when user was created. |
+| status | UserStatus | User status within the system. |
+| updateDate | DateTime | Date of last modification. |
 
-Reglas de negocio:
-- El email debe ser único en el sistema.
-- El documento de identidad debe ser válido y verificable.
-- Un usuario no puede tener más de un rol principal activo en simultáneo.
-- Los cambios de estado deben quedar registrados en auditoría.
+Business rules:
+- Email must be unique in the system.
+- Identity document must be valid and verifiable.
+- A user cannot have more than one active primary role simultaneously.
+- Status changes must be recorded in audit logs.
 
-### 4.2 Comprador
+### 4.2 Buyer
 
-| Atributo | Tipo | Descripción |
+| Attribute | Type | Description |
 |---|---|---|
-| idComprador | UUID | Identificador del comprador. |
-| idUsuario | UUID | Relación con la entidad Usuario. |
-| historialCompras | List<Pedido> | Pedidos realizados. |
-| direccionesEntrega | List<DireccionEntrega> | Direcciones asociadas al comprador. |
-| metodosPago | List<MetodoPago> | Métodos habilitados para pago. |
-| nivelConfianza | Enum | Nivel de confianza basado en comportamiento. |
-| fechaUltimaCompra | DateTime | Última compra registrada. |
+| buyerId | UUID | Buyer identifier. |
+| userId | UUID | Relationship with the User entity. |
+| purchaseHistory | List<Order> | Completed orders. |
+| deliveryAddresses | List<DeliveryAddress> | Addresses associated with the buyer. |
+| paymentMethods | List<PaymentMethod> | Enabled payment methods. |
+| trustLevel | Enum | Trust level based on behavior. |
+| lastPurchaseDate | DateTime | Last recorded purchase. |
 
-Reglas de negocio:
-- El comprador debe tener al menos una dirección principal para compras.
-- No puede comprar productos fuera de la disponibilidad del stock.
-- El historial debe estar inmutable para transacciones cerradas.
+Business rules:
+- Buyer must have at least one primary address for purchases.
+- Cannot purchase products outside of stock availability.
+- History must be immutable for closed transactions.
 
-### 4.3 Vendedor
+### 4.3 Seller
 
-| Atributo | Tipo | Descripción |
+| Attribute | Type | Description |
 |---|---|---|
-| idVendedor | UUID | Identificador del vendedor. |
-| idUsuario | UUID | Relación a la entidad Usuario. |
-| nombreComercial | String | Nombre visible de la tienda o del negocio. |
-| tipoPersona | Enum | Natural o jurídica. |
-| estadoVerificacion | Enum | Pendiente, Verificado, Rechazado. |
-| tienda | Tienda | Tienda principal asociada. |
-| cuentaComercial | CuentaComercial | Cuenta para pagos y comisiones. |
-| reputacion | Decimal | Valoración general del vendedor. |
-| fechaAprobacion | DateTime | Fecha de validación del vendedor. |
+| sellerId | UUID | Seller identifier. |
+| userId | UUID | Relationship to the User entity. |
+| commercialName | String | Visible store or business name. |
+| personType | Enum | Natural or legal. |
+| verificationStatus | Enum | Pending, Verified, Rejected. |
+| store | Store | Associated primary store. |
+| commercialAccount | CommercialAccount | Account for payments and commissions. |
+| reputation | Decimal | General seller rating. |
+| approvalDate | DateTime | Seller validation date. |
 
-Reglas de negocio:
-- Un vendedor debe estar verificado antes de publicar productos.
-- El nombre comercial debe ser único a nivel marketplace.
-- Las cuentas de liquidación deben ser consistentes con la información tributaria.
+Business rules:
+- A seller must be verified before publishing products.
+- Commercial name must be unique at marketplace level.
+- Settlement accounts must be consistent with tax information.
 
-### 4.4 Tienda
+### 4.4 Store
 
-| Atributo | Tipo | Descripción |
+| Attribute | Type | Description |
 |---|---|---|
-| idTienda | UUID | Identificador único de la tienda. |
-| idVendedor | UUID | Vendedor dueño de la tienda. |
-| nombre | String | Nombre comercial de la tienda. |
-| descripcion | String | Descripción visible. |
-| categoriaTienda | Enum | Categoría de negocio. |
-| estado | Enum | Activa, Inactiva, Suspendida. |
-| fechaCreacion | DateTime | Fecha de creación. |
+| storeId | UUID | Unique store identifier. |
+| sellerId | UUID | Seller who owns the store. |
+| name | String | Store commercial name. |
+| description | String | Visible description. |
+| storeCategory | Enum | Business category. |
+| status | Enum | Active, Inactive, Suspended. |
+| creationDate | DateTime | Creation date. |
 
-Reglas de negocio:
-- Una tienda solo puede pertenecer a un vendedor activo.
-- La suspensión de la tienda impide la publicación de nuevos productos.
+Business rules:
+- A store can only belong to one active seller.
+- Store suspension prevents publication of new products.
 
-### 4.5 Bodega
+### 4.5 Warehouse
 
-| Atributo | Tipo | Descripción |
+| Attribute | Type | Description |
 |---|---|---|
-| idBodega | UUID | Identificador de la bodega. |
-| idVendedor | UUID | Vendedor responsable. |
-| nombre | String | Nombre de la bodega. |
-| ubicacion | UbicacionBodega | Dirección o coordenada física. |
-| capacidad | Decimal | Capacidad estimada de almacenamiento. |
-| estado | Enum | Operativa, Cerrada, Mantenimiento. |
-| fechaCreacion | DateTime | Fecha de registro. |
+| warehouseId | UUID | Warehouse identifier. |
+| sellerId | UUID | Responsible seller. |
+| name | String | Warehouse name. |
+| location | WarehouseLocation | Physical address or coordinate. |
+| capacity | Decimal | Estimated storage capacity. |
+| status | Enum | Operational, Closed, Maintenance. |
+| creationDate | DateTime | Registration date. |
 
-Reglas de negocio:
-- La bodega debe estar operativa para despachar órdenes.
-- El stock asociado a una bodega no puede quedar en estado inconsistente.
+Business rules:
+- Warehouse must be operational to dispatch orders.
+- Stock associated with a warehouse cannot be left in inconsistent state.
 
-### 4.6 Producto
+### 4.6 Product
 
-| Atributo | Tipo | Descripción |
+| Attribute | Type | Description |
 |---|---|---|
-| idProducto | UUID | Identificador único del producto. |
-| nombre | String | Nombre visible del producto. |
-| descripcion | String | Descripción comercial. |
-| categoria | CategoriaProducto | Grupo o categoría del producto. |
-| sku | String | Código único interno. |
-| vendedor | Vendedor | Vendedor responsable. |
-| precioBase | Decimal | Precio base del producto. |
-| estadoProducto | EstadoProducto | Estado de publicación y disponibilidad. |
-| fechaPublicacion | DateTime | Fecha de publicación. |
-| marca | String | Marca del producto. |
+| productId | UUID | Unique product identifier. |
+| name | String | Visible product name. |
+| description | String | Commercial description. |
+| category | ProductCategory | Product group or category. |
+| sku | String | Unique internal code. |
+| seller | Seller | Responsible seller. |
+| basePrice | Decimal | Base product price. |
+| productStatus | ProductStatus | Publication status and availability. |
+| publicationDate | DateTime | Publication date. |
+| brand | String | Product brand. |
 
-Reglas de negocio:
-- El sku debe ser único globalmente.
-- Un producto no puede estar publicado si el vendedor no está verificado.
-- El pricing debe ser consistente con el tipo de producto y la política del marketplace.
+Business rules:
+- SKU must be globally unique.
+- A product cannot be published if the seller is not verified.
+- Pricing must be consistent with product type and marketplace policy.
 
-### 4.7 VarianteProducto
+### 4.7 ProductVariant
 
-| Atributo | Tipo | Descripción |
+| Attribute | Type | Description |
 |---|---|---|
-| idVariante | UUID | Identificador de la variante. |
-| idProducto | UUID | Producto asociado. |
-| atributo | String | Ejemplo: color, talla, capacidad. |
-| valor | String | Valor específico de la variante. |
-| precioAdicional | Decimal | Aumento o descuento para la variante. |
-| skuVariante | String | Código interno de la variante. |
+| variantId | UUID | Variant identifier. |
+| productId | UUID | Associated product. |
+| attribute | String | Example: color, size, capacity. |
+| value | String | Specific variant value. |
+| additionalPrice | Decimal | Increase or discount for the variant. |
+| skuVariant | String | Variant internal code. |
 
-Reglas de negocio:
-- La combinatoria de variantes no puede quedar duplicada.
-- El precio de una variante debe ser compatible con el precio base.
+Business rules:
+- Variant combination cannot be duplicated.
+- Variant price must be compatible with base price.
 
-### 4.8 Inventario
+### 4.8 Inventory
 
-| Atributo | Tipo | Descripción |
+| Attribute | Type | Description |
 |---|---|---|
-| idInventario | UUID | Identificador de inventario. |
-| idProducto | UUID | Producto asociado. |
-| idBodega | UUID | Bodega responsable. |
-| stockDisponible | Integer | Unidades disponibles. |
-| stockReservado | Integer | Unidades reservadas por pedidos abiertos. |
-| stockTotal | Integer | Total disponible más reservado. |
-| fechaActualizacion | DateTime | Fecha del último movimiento. |
+| inventoryId | UUID | Inventory identifier. |
+| productId | UUID | Associated product. |
+| warehouseId | UUID | Responsible warehouse. |
+| availableStock | Integer | Available units. |
+| reservedStock | Integer | Units reserved by open orders. |
+| totalStock | Integer | Total available plus reserved. |
+| updateDate | DateTime | Date of last movement. |
 
-Reglas de negocio:
-- stockDisponible + stockReservado = stockTotal.
-- No puede haber reservas sin pedido válido asociado.
-- La actualización de inventario debe hacerse bajo transacción.
+Business rules:
+- availableStock + reservedStock = totalStock.
+- There cannot be reserves without a valid associated order.
+- Inventory update must be done under transaction.
 
-### 4.9 CarritoCompra
+### 4.9 ShoppingCart
 
-| Atributo | Tipo | Descripción |
+| Attribute | Type | Description |
 |---|---|---|
-| idCarrito | UUID | Identificador del carrito. |
-| idComprador | UUID | Comprador dueño. |
-| lineasCarrito | List<LineaCarrito> | Productos seleccionados. |
-| subtotal | Decimal | Suma parcial sin impuestos. |
-| total | Decimal | Valor total del carrito. |
-| fechaActualizacion | DateTime | Última modificación. |
-| estado | Enum | Abierto, Convertido, Cancelado. |
+| cartId | UUID | Cart identifier. |
+| buyerId | UUID | Owner buyer. |
+| cartLines | List<CartLine> | Selected products. |
+| subtotal | Decimal | Partial sum without taxes. |
+| total | Decimal | Total cart value. |
+| updateDate | DateTime | Last modification. |
+| status | Enum | Open, Converted, Canceled. |
 
-Reglas de negocio:
-- El carrito no puede contener productos de vendedores no elegibles.
-- Si cambia la disponibilidad de un producto, debe actualizarse el carrito.
-- El carrito se convierte en pedido solo cuando se confirma la compra.
+Business rules:
+- Cart cannot contain products from ineligible sellers.
+- If product availability changes, cart must be updated.
+- Cart converts to order only when purchase is confirmed.
 
-### 4.10 Pedido
+### 4.10 Order
 
-| Atributo | Tipo | Descripción |
+| Attribute | Type | Description |
 |---|---|---|
-| idPedido | UUID | Identificador único del pedido. |
-| idComprador | UUID | Comprador del pedido. |
-| idVendedor | UUID | Vendedor responsable. |
-| lineasPedido | List<LineaPedido> | Productos comprados. |
-| subtotal | Decimal | Valor base del pedido. |
-| impuestos | Decimal | Impuestos aplicados. |
-| costoEnvio | Decimal | Coste de envío. |
-| total | Decimal | Total final. |
-| estadoPedido | EstadoPedido | Estado del ciclo del pedido. |
-| fechaCreacion | DateTime | Fecha de creación. |
-| fechaEntregaEstimada | DateTime | Fecha estimada de entrega. |
+| orderId | UUID | Unique order identifier. |
+| buyerId | UUID | Order buyer. |
+| sellerId | UUID | Responsible seller. |
+| orderLines | List<OrderLine> | Purchased products. |
+| subtotal | Decimal | Order base value. |
+| taxes | Decimal | Applied taxes. |
+| shippingCost | Decimal | Shipping cost. |
+| total | Decimal | Final total. |
+| orderStatus | OrderStatus | Order cycle status. |
+| creationDate | DateTime | Creation date. |
+| estimatedDeliveryDate | DateTime | Estimated delivery date. |
 
-Reglas de negocio:
-- Un pedido solo puede generarse si el carrito está válido.
-- Debe existir pago válido antes de la confirmación final del envío.
-- El pedido debe mantenerse trazable desde creación hasta cierre.
+Business rules:
+- An order can only be generated if the cart is valid.
+- Valid payment must exist before final shipment confirmation.
+- Order must remain traceable from creation to closure.
 
-### 4.11 LineaPedido
+### 4.11 OrderLine
 
-| Atributo | Tipo | Descripción |
+| Attribute | Type | Description |
 |---|---|---|
-| idLineaPedido | UUID | Identificador de la línea. |
-| idProducto | UUID | Producto solicitado. |
-| cantidad | Integer | Cantidad pedida. |
-| precioUnitario | Decimal | Precio por unidad. |
-| subtotal | Decimal | Total de la línea. |
-| idVariante | UUID | Variante del producto, si aplica. |
+| orderLineId | UUID | Line identifier. |
+| productId | UUID | Requested product. |
+| quantity | Integer | Quantity ordered. |
+| unitPrice | Decimal | Price per unit. |
+| subtotal | Decimal | Line total. |
+| variantId | UUID | Product variant, if applicable. |
 
-Reglas de negocio:
-- La cantidad debe ser mayor que cero.
-- El subtotal debe coincidir con cantidad × precioUnitario.
+Business rules:
+- Quantity must be greater than zero.
+- Subtotal must match quantity × unitPrice.
 
-### 4.12 Factura
+### 4.12 Invoice
 
-| Atributo | Tipo | Descripción |
+| Attribute | Type | Description |
 |---|---|---|
-| idFactura | UUID | Identificador de la factura. |
-| idPedido | UUID | Pedido asociado. |
-| numeroFactura | String | Número correlativo o único. |
-| fechaEmision | DateTime | Fecha de emisión. |
-| subtotal | Decimal | Base imponible. |
-| impuestos | Decimal | Monto de impuestos. |
-| total | Decimal | Valor total. |
-| moneda | Moneda | Tipo de moneda. |
-| estadoFactura | Enum | Emitida, Pagada, Anulada. |
+| invoiceId | UUID | Invoice identifier. |
+| orderId | UUID | Associated order. |
+| invoiceNumber | String | Correlative or unique number. |
+| issueDate | DateTime | Issue date. |
+| subtotal | Decimal | Taxable base. |
+| taxes | Decimal | Tax amount. |
+| total | Decimal | Total value. |
+| currency | Currency | Currency type. |
+| invoiceStatus | Enum | Issued, Paid, Cancelled. |
 
-Reglas de negocio:
-- La factura debe corresponder exactamente a un pedido confirmado.
-- No puede duplicarse el número de factura.
-- La emisión debe quedar asociada a auditoría.
+Business rules:
+- Invoice must correspond exactly to a confirmed order.
+- Invoice number cannot be duplicated.
+- Issuance must be associated with audit logs.
 
-### 4.13 Pago
+### 4.13 Payment
 
-| Atributo | Tipo | Descripción |
+| Attribute | Type | Description |
 |---|---|---|
-| idPago | UUID | Identificador del pago. |
-| idPedido | UUID | Pedido asociado. |
-| metodoPago | MetodoPago | Medio por el cual se realiza el pago. |
-| monto | Decimal | Valor pagado. |
-| moneda | Moneda | Moneda del pago. |
-| estadoPago | EstadoPago | Pendiente, Autorizado, Rechazado, Reembolsado. |
-| idTransaccionExterna | String | Identificador del gateway o entidad financiera. |
-| fechaProcesamiento | DateTime | Fecha de validación. |
+| paymentId | UUID | Payment identifier. |
+| orderId | UUID | Associated order. |
+| paymentMethod | PaymentMethod | Method used for payment. |
+| amount | Decimal | Paid amount. |
+| currency | Currency | Payment currency. |
+| paymentStatus | PaymentStatus | Pending, Authorized, Rejected, Refunded. |
+| externalTransactionId | String | Gateway or financial entity identifier. |
+| processingDate | DateTime | Validation date. |
 
-Reglas de negocio:
-- El pago debe aprobarse antes de la preparación de envío.
-- Un pedido no puede quedar pagado con un método no habilitado.
-- Los reembolsos deben reflejar la realidad de la transacción original.
+Business rules:
+- Payment must be approved before shipment preparation.
+- An order cannot be paid with a non-enabled method.
+- Refunds must reflect the reality of the original transaction.
 
-### 4.14 Envio
+### 4.14 Shipment
 
-| Atributo | Tipo | Descripción |
+| Attribute | Type | Description |
 |---|---|---|
-| idEnvio | UUID | Identificador del envío. |
-| idPedido | UUID | Pedido asociado. |
-| idBodega | UUID | Bodega de origen. |
-| direccionEntrega | DireccionEntrega | Lugar de llegada. |
-| transportadora | Transportadora | Empresa de transporte. |
-| codigoSeguimiento | String | Identificador de rastreo. |
-| estadoEnvio | EstadoEnvio | Programado, EnTransito, Entregado, Fallido. |
-| fechaSalida | DateTime | Fecha real de envío. |
-| fechaEntrega | DateTime | Fecha de entrega. |
+| shipmentId | UUID | Shipment identifier. |
+| orderId | UUID | Associated order. |
+| warehouseId | UUID | Origin warehouse. |
+| deliveryAddress | DeliveryAddress | Destination location. |
+| carrier | Carrier | Transport company. |
+| trackingCode | String | Tracking identifier. |
+| shipmentStatus | ShipmentStatus | Scheduled, InTransit, Delivered, Failed. |
+| departureDate | DateTime | Actual shipment date. |
+| deliveryDate | DateTime | Delivery date. |
 
-Reglas de negocio:
-- Un envío solo puede generarse cuando hay stock disponible y un pedido validado.
-- El código de seguimiento debe ser único.
-- Las entregas fallidas deben abrir un flujo de resolución logística.
+Business rules:
+- A shipment can only be generated when stock is available and an order is validated.
+- Tracking code must be unique.
+- Failed deliveries must open a logistics resolution flow.
 
-### 4.15 Devolucion
+### 4.15 Return
 
-| Atributo | Tipo | Descripción |
+| Attribute | Type | Description |
 |---|---|---|
-| idDevolucion | UUID | Identificador de la devolución. |
-| idPedido | UUID | Pedido relacionado. |
-| idFactura | UUID | Factura asociada. |
-| motivo | Enum | Daño, Error de envío, Desacuerdo, Otro. |
-| estadoDevolucion | Enum | Solicitada, EnRevision, Aprobada, Rechazada, Finalizada. |
-| fechaSolicitud | DateTime | Fecha de la solicitud. |
-| montoReembolso | Decimal | Monto que se va a devolver. |
+| returnId | UUID | Return identifier. |
+| orderId | UUID | Related order. |
+| invoiceId | UUID | Associated invoice. |
+| reason | Enum | Damage, Shipping Error, Disagreement, Other. |
+| returnStatus | Enum | Requested, InReview, Approved, Rejected, Completed. |
+| requestDate | DateTime | Request date. |
+| refundAmount | Decimal | Amount to be refunded. |
 
-Reglas de negocio:
-- La devolución debe estar asociada a un pedido con estado elegible.
-- El monto de reembolso no puede exceder el valor total de la compra.
-- Debe existir evidencia o validación del caso antes de aprobaciones automáticas.
+Business rules:
+- Return must be associated with an order in eligible status.
+- Refund amount cannot exceed total purchase value.
+- Evidence or case validation must exist before automatic approvals.
 
 ---
 
-## 5. Value Objects / Catálogos
+## 5. Value Objects / Catalogs
 
-Los value objects representan conceptos de negocio inmutables y de valor, usados para encapsular datos sin identidad propia.
+Value objects represent immutable business concepts of value, used to encapsulate data without their own identity.
 
-### 5.1 Value Objects principales
+### 5.1 Main value objects
 
-#### DocumentoIdentidad
-- tipoDocumento: Enum
-- numeroDocumento: String
-- paisEmision: String
+#### IdentityDocument
+- documentType: Enum
+- documentNumber: String
+- issueCountry: String
 
-Uso: identifica a compradores, vendedores y administradores.
+Usage: identifies buyers, sellers, and administrators.
 
-#### DireccionEntrega
-- pais: String
-- departamento: String
-- ciudad: String
-- barrio: String
-- direccion: String
-- codigoPostal: String
-- referencia: String
+#### DeliveryAddress
+- country: String
+- department: String
+- city: String
+- neighborhood: String
+- address: String
+- postalCode: String
+- reference: String
 
-Uso: representa la ubicación exacta para entregas y facturación.
+Usage: represents the exact location for deliveries and billing.
 
-#### MetodoPago
-- tipo: Enum
-- numeroEnmascarado: String
-- titular: String
-- fechaExpiracion: String
-- marca: String
+#### PaymentMethod
+- type: Enum
+- maskedNumber: String
+- cardholder: String
+- expirationDate: String
+- brand: String
 
-Uso: encapsula información de pago para los compradores.
+Usage: encapsulates payment information for buyers.
 
-#### Moneda
-- codigo: String
-- nombre: String
-- simbolo: String
-- decimales: Integer
+#### Currency
+- code: String
+- name: String
+- symbol: String
+- decimals: Integer
 
-Uso: estandariza la representación monetaria, por ejemplo COP, USD, EUR.
+Usage: standardizes monetary representation, for example COP, USD, EUR.
 
-#### PrecioProducto
-- valorBase: Decimal
-- moneda: Moneda
-- impuestoAplicado: Decimal
-- precioFinal: Decimal
+#### ProductPrice
+- baseValue: Decimal
+- currency: Currency
+- appliedTax: Decimal
+- finalPrice: Decimal
 
-Uso: garantiza consistencia monetaria en el catálogo.
+Usage: ensures monetary consistency in the catalog.
 
-### 5.2 Catálogos del dominio
+### 5.2 Domain catalogs
 
-#### Catálogo de estados de usuario
-- Activo
-- Inactivo
-- Bloqueado
-- PendienteVerificacion
+#### User Status Catalog
+- Active
+- Inactive
+- Blocked
+- PendingVerification
 
-#### Catálogo de estados de producto
-- Borrador
-- Publicado
-- Inactivo
-- Suspendido
-- Agotado
+#### Product Status Catalog
+- Draft
+- Published
+- Inactive
+- Suspended
+- OutOfStock
 
-#### Catálogo de categorías de producto
-- Electrónica
-- Hogar
-- Ropa y accesorios
-- Belleza
-- Deportes
-- Juguetes
-- Oficina
-- Ferretería
-- Automotriz
-- Otros
+#### Product Category Catalog
+- Electronics
+- Home
+- Clothing and Accessories
+- Beauty
+- Sports
+- Toys
+- Office
+- Hardware
+- Automotive
+- Other
 
-#### Catálogo de estados de pedido
-- Pendiente
-- Confirmado
-- Preparando
-- Enviado
-- Entregado
-- Cancelado
-- Reembolsado
+#### Order Status Catalog
+- Pending
+- Confirmed
+- Preparing
+- Sent
+- Delivered
+- Cancelled
+- Refunded
 
-#### Catálogo de estados de pago
-- Pendiente
-- Autorizado
-- Rechazado
-- Reembolsado
-- Fallido
+#### Payment Status Catalog
+- Pending
+- Authorized
+- Rejected
+- Refunded
+- Failed
 
-#### Catálogo de estados de envío
-- Programado
-- EnPreparacion
-- EnTransito
-- Entregado
-- Fallido
-- Retenido
+#### Shipment Status Catalog
+- Scheduled
+- InPreparation
+- InTransit
+- Delivered
+- Failed
+- Retained
 
-#### Catálogo de tipos de documento
-- Cédula de ciudadanía
-- Tarjeta de identidad
-- NIT
-- Pasaporte
-- Cédula extranjera
+#### Document Type Catalog
+- Citizenship Card
+- Identity Card
+- Tax ID
+- Passport
+- Foreign ID
 
-#### Catálogo de monedas soportadas
+#### Supported Currencies Catalog
 - COP
 - USD
 - EUR
 
 ---
 
-## 6. Reglas de Diseño del Dominio
+## 6. Domain Design Rules
 
-El diseño del dominio para NexusMarket debe seguir una serie de reglas orientadas a la consistencia, trazabilidad y evolución del negocio.
+The domain design for NexusMarket must follow a series of rules oriented towards consistency, traceability, and business evolution.
 
-### 6.1 Inmutabilidad
+### 6.1 Immutability
 
-Los value objects deben ser inmutables. Una vez creados, no pueden cambiar su valor. Esto garantiza:
+Value objects must be immutable. Once created, they cannot change their value. This ensures:
 
-- consistencia en precios y direcciones,
-- menor riesgo de errores de negocio,
-- claridad en la trazabilidad de operaciones.
+- consistency in prices and addresses,
+- lower risk of business errors,
+- clarity in the traceability of operations.
 
-Ejemplo: una dirección de entrega o un precio no deben modificarse de forma implícita después de ser aceptados por el sistema.
+Example: a delivery address or a price should not be modified implicitly after being accepted by the system.
 
-### 6.2 Auditoría
+### 6.2 Audit
 
-Toda operación crítica debe quedar registrada con información de:
+Every critical operation must be recorded with information about:
 
-- usuario que ejecutó la acción,
+- user who executed the action,
 - timestamp,
-- entidad afectada,
-- cambio realizado,
-- motivo o justificación del cambio.
+- affected entity,
+- change made,
+- reason or justification for the change.
 
-Esto aplica especialmente a:
-- creación y edición de vendedores,
-- publicación de productos,
-- cambios de stock,
-- confirmación de pedidos,
-- aprobación de pagos,
-- resolución de devoluciones y disputas.
+This applies especially to:
+- creation and editing of sellers,
+- product publication,
+- stock changes,
+- order confirmation,
+- payment approval,
+- resolution of returns and disputes.
 
-### 6.3 Consistencia transaccional
+### 6.3 Transactional consistency
 
-Las operaciones que involucran más de un agregado deben mantenerse bajo transacciones o eventos de dominio coherentes. Ejemplos:
+Operations that involve more than one aggregate must be maintained under transactions or coherent domain events. Examples:
 
-- Confirmar pedido implica reservar stock y autorizar pago.
-- Generar devolución exige validar el pedido y la factura asociada.
-- Actualizar inventario debe preservar la relación entre stock disponible, reservado y total.
+- Confirming order implies reserving stock and authorizing payment.
+- Generating return requires validating the associated order and invoice.
+- Updating inventory must preserve the relationship between available, reserved, and total stock.
 
-### 6.4 Restricciones de dominio
+### 6.4 Domain constraints
 
-- No puede existir un producto publicado sin vendedor verificado.
-- Un pedido no puede ser entregado si no existe evidencia de pago válido.
-- Un carrito no puede contener productos con inventario inexistente.
-- La factura debe corresponder a un pedido legítimo y validado.
-- Un vendedor no puede liquidar saldo sin tener información comercial y bancaria válida.
+- A published product cannot exist without a verified seller.
+- An order cannot be delivered without evidence of valid payment.
+- A cart cannot contain products with non-existent inventory.
+- The invoice must correspond to a legitimate and validated order.
+- A seller cannot settle balance without having valid commercial and banking information.
 
-### 6.5 Trazabilidad del ciclo de vida
+### 6.5 Lifecycle traceability
 
-Cada entidad con estado relevante debe registrar su ciclo de vida completo:
+Each entity with relevant status must record its complete lifecycle:
 
-- creación,
-- modificación,
-- aprobación,
-- cancelación,
-- cierre,
-- liquidación o devolución.
+- creation,
+- modification,
+- approval,
+- cancellation,
+- closure,
+- settlement or return.
 
-Esto es esencial para la resolución de operaciones en marketplace, especialmente en logística, soporte y auditoría administrativa.
+This is essential for the resolution of marketplace operations, especially in logistics, support, and administrative audit.
 
-### 6.6 Separación de responsabilidades por agregado
+### 6.6 Separation of responsibilities by aggregate
 
-Cada agregado debe conservar su propia consistencia y no depender de la manipulación directa de otros agregados. Por ejemplo:
+Each aggregate must maintain its own consistency and not depend on direct manipulation of other aggregates. For example:
 
-- `Inventario` administra stock.
-- `Pedido` administra el ciclo de compra.
-- `Pago` administra autorización y cobro.
-- `Envio` administra entregas y seguimiento.
-- `Devolucion` administra reembolsos y resolución.
+- `Inventory` manages stock.
+- `Order` manages the purchase cycle.
+- `Payment` manages authorization and charging.
+- `Shipment` manages deliveries and tracking.
+- `Return` manages refunds and resolution.
 
-Esto evita acoplamientos innecesarios y mejora la calidad del diseño DDD.
 
 ---
