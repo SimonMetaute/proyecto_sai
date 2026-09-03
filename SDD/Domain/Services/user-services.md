@@ -974,24 +974,3 @@ Las respuestas externas se traducen a modelos de dominio antes de decidir. Las e
 
 49. Toda operación crítica debe generar un `AuditLog` con `AuditSeverity` y detalles sin secretos.
 50. Los detalles de auditoría no pueden contener contraseñas, tokens, códigos de verificación, datos completos de pago ni credenciales.
-51. Los fallos de autenticación y accesos sospechosos deben conservar conteo, fecha y contexto suficiente para investigación.
-52. Los consentimientos deben registrar propósito, versión de política, decisión, actor y fecha.
-53. La revocación de consentimiento debe afectar usos futuros, sin alterar obligaciones legales o transacciones cerradas.
-54. Las consultas de timeline deben paginarse por criterio de dominio y no cargar historial ilimitado en memoria.
-55. Las consultas de usuario deben poder ejecutarse con índices de email, documento y `userId` sin cambiar el contrato del puerto.
-56. Las políticas de autorización y riesgo deben estar versionadas para explicar decisiones históricas.
-57. Los catálogos y códigos de roles, estados y operaciones deben ser estables para integraciones externas.
-58. La compatibilidad de eventos exige consumidores tolerantes a campos nuevos y productores que no eliminen campos vigentes sin versión.
-
-### Special Business Rules
-
-59. Un vendedor no puede publicar productos hasta que su perfil `Seller` esté verificado; la decisión se toma en el subdominio vendedor.
-60. Un supervisor puede consultar dashboards e historial permitido, pero nunca aprobar un cambio crítico de identidad.
-61. La identidad verificada de un usuario no puede sustituirse por otra mediante una actualización ordinaria.
-62. Un usuario inactivo puede conservar historial y perfiles, pero no iniciar operaciones restringidas.
-63. El bloqueo de acceso no cancela automáticamente órdenes, pagos o envíos; cada subdominio decide su compensación.
-64. La timeline de acceso debe distinguir autenticación exitosa, rechazo, logout, recuperación y revocación.
-65. La evaluación de elegibilidad debe devolver razones de dominio y requisitos pendientes, no solo un booleano.
-66. Las decisiones automatizadas de riesgo deben permitir revisión humana cuando la política lo exija.
-67. Toda operación iniciada por un proceso del sistema debe identificar un actor técnico autorizado en `performedBy`.
-68. El tratamiento de datos debe respetar el propósito declarado y no reutilizar consentimiento entre finalidades incompatibles.
