@@ -1,3 +1,6 @@
+# Plantilla
+├──, └──, │
+
 # Domain Model - NexusMarket
 
 ## 1. Introduction
@@ -333,6 +336,45 @@ Business rules:
 - Refund amount cannot exceed total purchase value.
 - Evidence or case validation must exist before automatic approvals.
 
+### 2.16 Operation
+
+`Operation` represents a significant business action executed by a user or by an authorized system process. It connects the actor, the action, and the entity affected, providing the traceability reference used by `AuditLog`.
+
+| Attribute | Type | Description |
+|---|---|---|
+| operationId | UUID | Unique operation identifier. |
+| operationType | OperationType | Type of business operation performed. |
+| executionDate | DateTime | Date and time when the operation occurred. |
+| performedBy | User | User or authorized actor that performed the operation. |
+| affectedEntity | UUID | Identifier of the affected entity. |
+| affectedEntityType | String | Type of entity affected by the operation. |
+
+Business rules:
+- Every critical operation must identify its performer and affected entity.
+- `operationType` must be a valid value from the `OperationType` catalog.
+- An operation must preserve the execution time and cannot be silently overwritten.
+
+### 2.17 AuditLog
+
+`AuditLog` is the immutable, append-only record of critical `Operation` instances. It supports regulatory compliance, incident investigation, and reconstruction of the domain state over time.
+
+| Attribute | Type | Description |
+|---|---|---|
+| auditId | UUID | Unique audit record identifier. |
+| operationType | OperationType | Type of operation recorded. |
+| operationDate | DateTime | Date and time of the recorded operation. |
+| performedBy | User | User or authorized actor responsible for the operation. |
+| userRole | Enum | Role held by the actor when the operation occurred. |
+| affectedEntity | UUID | Identifier of the affected entity. |
+| details | JSON | Flexible operation details and contextual evidence. |
+| severity | Enum | Business or compliance impact level of the event. |
+
+Business rules:
+- `AuditLog` records are immutable after creation.
+- Audit records are append-only: new records may be added, but existing records cannot be updated or deleted.
+- Every critical `Operation` must produce an associated audit record.
+- `details` must not contain credentials, payment secrets, or other prohibited sensitive data.
+
 ---
 
 ## 3. Domain Class Hierarchy
@@ -407,7 +449,79 @@ This hierarchy expresses the composition of the domain as a set of business aggr
 
 The NexusMarket domain is structured around relationships between entities and aggregates. The following presents the main mapping of business relationships:
 
-### 4.1 User - Buyer Relationship
+### 4.1 Domain Relationships Diagram
+
+The following diagrams make explicit how the principal aggregates collaborate during the marketplace lifecycle.
+
+#### 4.1.1 Relationship overview
+
+```text
+                      +------------------+
+                      |      User        |
+                      +---------+--------+
+                          |
+                +------------------+------------------+
+                |                                     |
+                v                                     v
+            +-------------+                       +-------------+
+            |    Buyer    |                       |    Seller   |
+            +------+------+                       +------+------+
+                |                                     |
+           +-------+-------+                 +-----------+-----------+
+           |               |                 |           |           |
+           v               v                 v           v           v
+       +--------------+ +-----------+      +---------+ +---------+ +----------------+
+       | ShoppingCart | |   Order   |      |  Store  | | Product | |   Warehouse    |
+       +------+-------+ +-----+-----+      +---------+ +----+----+ +-------+--------+
+           |               |                           |                |
+           | converts to   |                           | has            | stores
+           +-------------->+                           v                v
+                  +--+---------+             +---------+    +-------------+
+                  |            |             | Variant |    |  Inventory  |
+                  v            v             +---------+    +-------------+
+                +---------+  +---------+
+                | Invoice |  | Payment |
+                +---------+  +---------+
+                  |
+                  v
+                +---------+
+                | Return  |
+                +---------+
+
+                Order ----> Shipment ----> DeliveryAddress / Carrier
+                  |
+                  +-------> OrderLine ----> Product / ProductVariant
+```
+
+#### 4.1.2 Main cardinalities
+
+```text
+User           1 ---- 0..1 Buyer
+User           1 ---- 0..1 Seller
+Buyer          1 ---- 0..1 ShoppingCart
+Buyer          1 ---- 0..* Order
+Seller         1 ---- 1..* Product
+Seller         1 ---- 0..* Store
+Seller         1 ---- 0..* Warehouse
+Product        1 ---- 0..* ProductVariant
+Product        1 ---- 0..* Inventory
+Warehouse      1 ---- 0..* Inventory
+ShoppingCart   1 ---- 0..* CartLine
+ShoppingCart   1 ---- 0..1 Order       (after checkout)
+Order          1 ---- 1..* OrderLine
+Order          1 ---- 0..1 Invoice
+Order          1 ---- 0..* Payment
+Order          1 ---- 0..* Shipment
+Order          1 ---- 0..* Return
+OrderLine      * ---- 1    Product
+OrderLine      0..* -- 0..1 ProductVariant
+Shipment       * ---- 1    Warehouse
+Shipment       * ---- 1    DeliveryAddress
+```
+
+Legend: `1` means exactly one, `0..1` means optional and unique, `0..*` means zero or more, and `1..*` means one or more. The `Order` created during checkout is the transactional reference used by billing, payment, logistics, and post-sale processes.
+
+### 4.2 User - Buyer Relationship
 
 - A `User` can be registered as a `Buyer`.
 - A buyer can have multiple `DeliveryAddresses`.
@@ -415,7 +529,7 @@ The NexusMarket domain is structured around relationships between entities and a
 - A buyer can generate multiple `Orders`.
 - A buyer can have a purchase history and ratings.
 
-### 4.2 User - Seller Relationship
+### 4.3 User - Seller Relationship
 
 - A `User` can be registered as a `Seller`.
 - A seller can own one or several `Stores`.
@@ -423,46 +537,180 @@ The NexusMarket domain is structured around relationships between entities and a
 - A seller can publish multiple `Products`.
 - A seller can have a `CommercialAccount` for settlements and commissions.
 
-### 4.3 Seller - Product Relationship
+### 4.4 Seller - Product Relationship
 
 - A seller publishes one or more products.
 - Each product belongs to a category.
 - A product can have multiple `ProductVariants`.
 - A product can be associated with stock records and availability per warehouse.
 
-### 4.4 Product - Inventory Relationship
+### 4.5 Product - Inventory Relationship
 
 - A product is associated with inventory records.
 - Inventory is managed by warehouse.
 - The system validates real availability before confirming a cart or order.
 - Stock can be updated by entry/exit movements.
 
-### 4.5 Buyer - Cart - Order Relationship
+### 4.6 Buyer - Cart - Order Relationship
 
 - A buyer creates a `ShoppingCart`.
 - The cart accumulates purchase lines (`CartLine`).
 - When the buyer confirms the purchase, the cart becomes an `Order`.
 - The order creates a purchase order linked to product, quantities, value, and logistics.
 
-### 4.6 Order - Invoice - Payment Relationship
+### 4.7 Order - Invoice - Payment Relationship
 
 - An order generates an `Invoice` when the purchase is completed.
 - The order requires an associated `Payment`.
 - Payment can be in pending, authorized, rejected, or refunded status.
 - The invoice reflects taxes, totals, and marketplace commissions.
 
-### 4.7 Order - Logistics Relationship
+### 4.8 Order - Logistics Relationship
 
 - An order can generate one or several `DeliveryOrders`.
 - The shipment is associated with a delivery address and a carrier.
 - The shipment status is updated during the delivery cycle.
 - Logistics may require coordination with the warehouse and seller.
 
-### 4.8 Order - Post-Sale Relationship
+### 4.9 Order - Post-Sale Relationship
 
 - An order can have returns, claims, and refunds.
 - A return is associated with a reason, status, and case evaluation.
 - The platform can issue a dispute resolution or case closure.
+
+---
+
+## 4.10 Domain Lifecycle Examples
+
+The following examples describe the main state transitions of NexusMarket. Each transition emits a critical domain event and must be recorded as an `Operation` and, when applicable, an `AuditLog` entry. Cross-aggregate coordination is performed through application services or domain events; aggregates preserve their own internal consistency.
+
+### 4.10.1 Order Processing Lifecycle
+
+```text
+ShoppingCart: Open
+  |
+  | CheckoutCart / CART_CREATION
+  | Validate buyer, items, seller eligibility, prices, and stock
+  v
+Order: Pending
+  |
+  | CreateOrder / ORDER_CREATION
+  | Copy cart lines and commercial conditions into the order
+  v
+Order: Confirmed <-----------------------------+
+  |                                           |
+  | AuthorizePayment / PAYMENT_AUTHORIZATION  | Payment rejected
+  | Validate enabled method and exact amount  | PAYMENT_REJECTION
+  v                                           |
+Payment: Authorized                           v
+  |                                      Order: Cancelled
+  | ReserveInventory / INVENTORY_RESERVATION
+  | Validate availableStock >= requested quantity
+  v
+Inventory: Reserved
+  |
+  | Prepare and dispatch / SHIPMENT_DISPATCH
+  | Validate payment authorization and operational warehouse
+  v
+Shipment: InTransit
+  |
+  | DeliverShipment / SHIPMENT_DELIVERY
+  | Confirm tracking and delivery evidence
+  v
+Order: Delivered
+```
+
+| Transition | Critical event | Entities involved | Restrictions and validations |
+|---|---|---|---|
+| `ShoppingCart: Open` -> `Order: Pending` | `ORDER_CREATION` | `Buyer`, `ShoppingCart`, `CartLine`, `Order`, `Product` | Buyer is active; cart is valid; quantities are positive; products are published and eligible. |
+| `Order: Pending` -> `Order: Confirmed` | `ORDER_CONFIRMATION` | `Order`, `OrderLine`, `Payment` | Totals and taxes are consistent; payment method is enabled; buyer has a valid delivery address. |
+| Payment -> `Authorized` | `PAYMENT_AUTHORIZATION` | `Payment`, `Order`, `Buyer` | Authorized amount equals the confirmed order total; rejected payments cannot continue. |
+| Inventory -> `Reserved` | `INVENTORY_RESERVATION` | `Inventory`, `Warehouse`, `OrderLine` | Warehouse is operational; available stock covers every requested line; reservation is transactional. |
+| Order -> Shipment | `SHIPMENT_DISPATCH` | `Order`, `Shipment`, `Warehouse`, `Carrier` | Payment is authorized, inventory is reserved, and tracking code is unique. |
+| Shipment -> `Delivered` | `SHIPMENT_DELIVERY` | `Shipment`, `DeliveryAddress`, `Carrier`, `Order` | Delivery evidence exists; status cannot skip required logistics transitions. |
+
+### 4.10.2 Product Publication Lifecycle
+
+```text
+User: Registered
+  |
+  | RegisterVendor / SELLER_REGISTRATION
+  | Validate identity and commercial information
+  v
+Seller: PendingVerification
+  |
+  | ApproveVendor / SELLER_VERIFICATION
+  | Validate compliance and seller eligibility
+  v
+Seller: Verified
+  |
+  | CreateProduct / PRODUCT_PUBLICATION
+  | Create product with catalog data and draft status
+  v
+Product: Draft
+  |
+  | PublishProduct / PRODUCT_PUBLICATION
+  | Validate category, SKU, price, variants, and verified seller
+  v
+Product: Published
+  |
+  +--> PRODUCT_STATUS_CHANGE --> Product: Suspended
+  |                                  |
+  |                                  +--> PRODUCT_STATUS_CHANGE --> Published
+  |
+  +--> PRODUCT_STATUS_CHANGE --> Product: OutOfStock
+  |                                  |
+  |                                  +--> INVENTORY_ENTRY --------> Published
+  |
+  +--> PRODUCT_UNPUBLICATION --> Product: Inactive
+```
+
+| Transition | Critical event | Entities involved | Restrictions and validations |
+|---|---|---|---|
+| User -> `Seller: PendingVerification` | `SELLER_REGISTRATION` | `User`, `Seller`, `IdentityDocument` | Identity and commercial data are complete; seller cannot publish yet. |
+| Seller -> `Verified` | `SELLER_VERIFICATION` | `Seller`, `User`, `Operation`, `AuditLog` | Only an authorized role may approve; verification decision is auditable. |
+| Seller -> `Product: Draft` | `PRODUCT_PUBLICATION` | `Seller`, `Store`, `Product` | Seller exists and is associated with an active store. |
+| Draft -> `Published` | `PRODUCT_PUBLICATION` | `Product`, `ProductVariant`, `ProductCategory`, `ProductPrice` | Seller is verified; SKU is unique; catalog data, price, and variants are valid. |
+| Published -> `Suspended` / `OutOfStock` | `PRODUCT_STATUS_CHANGE` | `Product`, `Inventory`, `Seller` | Suspension follows policy; out-of-stock status reflects zero available stock. |
+| Published -> `Inactive` | `PRODUCT_UNPUBLICATION` | `Product`, `Seller`, `Operation`, `AuditLog` | Product is removed from new purchases without altering historical order lines. |
+
+### 4.10.3 Return & Refund Lifecycle
+
+```text
+Order: Delivered
+  |
+  | RequestReturn / RETURN_REQUEST
+  | Validate return window, order status, reason, and evidence
+  v
+Return: Requested
+  |
+  | ReviewReturn
+  | Check eligibility, invoice, items, and evidence
+  v
+Return: InReview
+  |
+  +--> ApproveReturn / RETURN_APPROVAL --> Return: Approved
+  |                                           |
+  |                                           | ProcessRefund / REFUND_PROCESSING
+  |                                           | Validate original payment and amount
+  |                                           v
+  |                                       Payment: Refunded
+  |                                           |
+  |                                           v
+  |                                       Return: Completed
+  |
+  +--> RejectReturn / RETURN_REJECTION --> Return: Rejected
+                        |
+                        +--> DISPUTE_RESOLUTION (if challenged)
+```
+
+| Transition | Critical event | Entities involved | Restrictions and validations |
+|---|---|---|---|
+| Delivered order -> `Return: Requested` | `RETURN_REQUEST` | `Buyer`, `Order`, `Return`, `Invoice` | Order is eligible; request is within the allowed period; reason and evidence are recorded. |
+| Requested -> `InReview` | `RETURN_REQUEST` | `Return`, `OrderLine`, `Product`, `Operation` | Requested items belong to the order; no duplicate active return exists for the same item. |
+| In review -> `Approved` | `RETURN_APPROVAL` | `Return`, `Order`, `Seller`, `AuditLog` | Evidence and case validation support approval; refund cannot exceed the eligible amount. |
+| In review -> `Rejected` | `RETURN_REJECTION` | `Return`, `Buyer`, `Operation`, `AuditLog` | Rejection reason is mandatory and must be traceable. |
+| Approved -> refunded/completed | `REFUND_PROCESSING` | `Return`, `Payment`, `Invoice`, `Buyer` | Refund uses the original transaction; amount and currency match the approved return; result is recorded. |
 
 ---
 
@@ -580,6 +828,18 @@ Usage: ensures monetary consistency in the catalog.
 - USD
 - EUR
 
+#### OperationType Catalog
+
+| Domain | Operation types |
+|---|---|
+| User & Access | `BUYER_REGISTRATION`, `SELLER_REGISTRATION`, `SELLER_VERIFICATION`, `USER_STATUS_CHANGE` |
+| Products | `PRODUCT_PUBLICATION`, `PRODUCT_MODIFICATION`, `PRODUCT_UNPUBLICATION`, `PRODUCT_STATUS_CHANGE` |
+| Inventory | `INVENTORY_ENTRY`, `INVENTORY_RESERVATION`, `INVENTORY_DEDUCTION`, `INVENTORY_ADJUSTMENT` |
+| Purchase | `CART_CREATION`, `CART_MODIFICATION`, `CART_CANCELLATION`, `ORDER_CREATION`, `ORDER_CONFIRMATION` |
+| Payment | `PAYMENT_CREATION`, `PAYMENT_AUTHORIZATION`, `PAYMENT_REJECTION`, `PAYMENT_REFUND_REQUEST`, `REFUND_PROCESSING` |
+| Shipping | `SHIPMENT_DISPATCH`, `SHIPMENT_STATUS_UPDATE`, `SHIPMENT_DELIVERY`, `SHIPMENT_FAILURE` |
+| After-sales | `RETURN_REQUEST`, `RETURN_APPROVAL`, `RETURN_REJECTION`, `DISPUTE_RESOLUTION` |
+
 ---
 
 ## 6. Domain Design Rules
@@ -643,7 +903,43 @@ Each entity with relevant status must record its complete lifecycle:
 
 This is essential for the resolution of marketplace operations, especially in logistics, support, and administrative audit.
 
-### 6.6 Separation of responsibilities by aggregate
+### 6.6 Critical Operations and Audit Events
+
+Each state transition that changes a business commitment must create an `Operation` with its `OperationType` and append an `AuditLog` record. Domain events may coordinate other aggregates asynchronously, but they must carry the operation identifier and preserve ordering and correlation information for reconstruction of the business flow.
+
+### 6.7 Aggregate Boundaries and Responsibilities
+
+NexusMarket is organized into aggregates with explicit consistency boundaries. Each aggregate owns its state and invariants; coordination with another aggregate occurs through an application service, an identifier reference, or a domain event, never through direct access to another aggregate's internal objects.
+
+| Aggregate | Root responsibility | Boundary and consistency rules |
+|---|---|---|
+| `User` | Identity, role, and account status | Owns identity and access state. `Buyer` and `Seller` profiles reference the user without modifying its internal state. |
+| `Product` | Catalog definition and publication state | Owns product data, variants, price, category, and publication lifecycle. It does not reserve or deduct inventory directly. |
+| `Order` | Commercial transaction and order lines | Owns purchased quantities, prices, totals, and order status. It references payment, inventory, and shipment by identifiers or events. |
+| `Inventory` | Stock quantities and reservations per warehouse | Owns available, reserved, and total stock. It validates stock invariants and does not change order state directly. |
+| `Shipment` | Dispatch and delivery tracking | Owns carrier, tracking, destination, and shipment status. It consumes fulfillment information but does not own inventory or payment state. |
+| `Return` | Return case and refund eligibility | Owns reason, evidence, review decision, and approved amount. It requests refund processing without changing payment internals directly. |
+
+The aggregate root is the only entry point for changes inside its boundary. Repositories load and persist one aggregate at a time, and cross-aggregate workflows must tolerate eventual consistency while preserving the required business invariants.
+
+### 6.8 Critical Operational Constraints
+
+The following constraints are mandatory for the main marketplace workflows:
+
+| Area | Constraint | Enforcement point |
+|---|---|---|
+| Buyer | A buyer must have at least one valid primary `DeliveryAddress` before checkout. | Cart validation and order creation. |
+| Buyer | A buyer cannot purchase a product when the required quantity is unavailable. | Inventory availability validation and reservation. |
+| Seller | A seller must be verified before publishing or modifying a product's public state. | Seller authorization and product publication. |
+| Seller | A seller must have at least one operational `Warehouse` to fulfill an order. | Shipment preparation and dispatch. |
+| Order | A valid, authorized `Payment` is required before shipment preparation or dispatch. | Order confirmation and logistics workflow. |
+| Order | An order cannot be modified once its shipment is `InTransit`; only permitted status transitions remain available. | Order aggregate state transition. |
+| Order | Historical order lines preserve the confirmed product, quantity, price, and tax values. | Order confirmation and post-sale processing. |
+| Payment | Payment must be authorized before fulfillment proceeds. | Payment authorization and order workflow. |
+| Payment | The authorized amount and currency cannot change after order confirmation; a correction requires a controlled cancellation or refund flow. | Payment aggregate and refund process. |
+| Audit | Critical operations must be attributable, immutable, and append-only. | `Operation` creation and `AuditLog` persistence. |
+
+### 6.9 Separation of responsibilities by aggregate
 
 Each aggregate must maintain its own consistency and not depend on direct manipulation of other aggregates. For example:
 
