@@ -1,7 +1,6 @@
 # Orchestrator State
 
-Proyecto: **NexusMarket** (marketplace, documentación SDD en `SDD/`). Este fichero
-replica la estructura de `orchestrator_state.md` (proyecto bancario de referencia)
+Proyecto: **NexusMarket** (marketplace, documentación SDD en `SDD/`). Este fichero es
 para gestionar el estado de las ejecuciones del orquestador sobre la
 implementación de NexusMarket: contratos, dominio, puertos, endpoints REST,
 pruebas y entrega.
