@@ -24,7 +24,7 @@ pruebas y entrega.
 - bloqueos (criterio de producto): ninguno. Todas las discrepancias se resolvieron con criterio documental según Contract-alignment.md §1.
 ## Run record (run-02: alineación de contratos + diagnóstico inicial — 2026-10-14)
 - runId: run-2026-10-14-contract-alignment-02
-- fase: `REPAIR_CONTRACT` — alineación documental Java/TypeScript y diagnóstico
+- fase: `REPAIR_CONTRACT` — alineación documental TypeScript y diagnóstico
 - archivos: SDD/Contract-alignment.md (revisado), SDD/Domain/Domain_model.md,
   SDD/Domain/Domain_services.md, SDD/Domain/Domain_value_objects.md,
   SDD/Domain/Input-ports.md, SDD/Domain/Output-ports.md,
@@ -32,7 +32,7 @@ pruebas y entrega.
   SDD/Software architecture.md/software_architecture.md,
   SDD/Orchestrator-prompt.md
 - decisión: `Contract-alignment.md` es la autoridad transversal; dominio y puertos
-  son canónicos; Java y TypeScript comparten parámetros y semántica, con
+  son canónicos; TypeScript es el lenguaje canónico del backend y comparte parámetros y semántica, con
   adaptación únicamente de retorno async. `400` es estado de validación por
   defecto; `401`/`403` por autenticación/autorización. MySQL 3306, MongoDB 27017.
 - evidencia: documentos enlazados; conocida discrepancia `addItemToCart` (409 vs
@@ -59,8 +59,8 @@ pruebas y entrega.
   - SDD/backend_orchestrator-prompt.md (obsoleto, sin seguimiento)
 - decisión: NexusMarket es un marketplace con 5 participantes
   (`BUYER`, `SELLER`, `LOGISTICS_OPERATOR`, `ADMINISTRATOR`, `SUPERVISOR`) y
-  subdominios definidos por DDD + arquitectura hexagonal. El backend será Java +
-  Spring Boot o TypeScript + NestJS/Express según el perfil detectado; frontend
+  subdominios definidos por DDD + arquitectura hexagonal. El backend es Node.js +
+  TypeScript + Express (cambio de stack autorizado); frontend
   React + TypeScript; persistencia MySQL (relacional) y MongoDB (auditoría);
   Docker Compose.
 - evidencia: documentos SDD presentes y coherentes entre sí; se detectó y se
@@ -93,7 +93,7 @@ pruebas y entrega.
   no romper el entorno local.
 - `appConfig.ts` lee `MYSQL_PORT` del entorno (defecto 3306); se acepta el override
   local documentado, pero el canónico SDD sigue siendo 3306:3306.
-- API usa `8080` como puerto predeterminado, salvo que un contrato existente
+- API usa `3000` como puerto predeterminado (Express `backend/src/index.ts`), salvo que un contrato existente
   documente otro valor.
 - Port canónicos (según `SDD/Contract-alignment.md`): `PublicAccessPort`,
   `BuyerPort`, `SellerPort`, `LogisticsOperatorPort`, `AdministratorPort`,
@@ -134,7 +134,7 @@ pruebas y entrega.
 ```text
 Estado: IN_PROGRESS
 Stack detectado y evidencia:
-  - Documentación SDD: Java/TypeScript + React + TypeScript, MySQL + MongoDB
+  - Documentación SDD: Node.js/TypeScript + Express + React + TypeScript, MySQL (transaccional) + MongoDB (auditoría)
   - Fase actual: REPAIR_CONTRACT alineación contractual (run-2026-10-15)
   - Enfoque: Documentacion-first; ajuste de contratos sin código backend.
 Fase/tarea seleccionada y motivo:

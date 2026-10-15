@@ -1,0 +1,17 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: nexusmarket-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: nexusmarket
+      MYSQL_USER: nexus_user
+      MYSQL_PASSWORD: nexus_pass
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:

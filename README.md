@@ -13,7 +13,7 @@ La documentación y los contratos del proyecto están completos y alineados (IN_
 - Marketplace con cinco roles operativos: `BUYER`, `SELLER`, `LOGISTICS_OPERATOR`, `ADMINISTRATOR` y `SUPERVISOR`.
 - Modelo de negocio orientado al dominio con entidades, value objects, servicios de dominio y excepciones explícitas.
 - Arquitectura hexagonal con input ports, output ports y adaptadores de tecnología.
-- Backend Java + Spring Boot para la API del marketplace.
+- Backend Node.js + TypeScript + Express para la API del marketplace.
 - Frontend React + TypeScript con paneles y workflows por rol.
 - Persistencia MySQL para datos transaccionales.
 - Persistencia MongoDB para registros de auditoría.
@@ -34,12 +34,12 @@ La documentación y los contratos del proyecto están completos y alineados (IN_
                                        |
                                        v
                             +----------------------+
-                            | Spring Boot Backend  |
+                            | Node.js Express Backend  |
                             | backend/src/          |
                             | REST + application    |
                             +----+------------+----+
                                  |            |
-                               Spring Data    Spring Data
+                               Repository Adapters    Repository Adapters
                                  |            |
                                  v            v
                           +-----------+  +-----------+
@@ -65,28 +65,27 @@ NexusMarket separa la entrega del navegador, la orquestación de la aplicación,
 
 | Technology | Version in project | Role | Boundary and rationale |
 |---|---:|---|---|
-| Java | `17` | Lenguaje y ejecución del API del marketplace. | Encapsula la lógica de aplicación, casos de uso y seguridad. El dominio no depende de Java globals. |
-| Spring Boot | `^3.2.0` | Framework de la capa de aplicación y de infraestructura. | Implementa los adaptadores REST y de persistencia sin contener reglas de negocio del dominio. |
-| Spring Data JPA | `^3.2.0` | Acceso a datos relacionales. | Implementa output ports y mapea datos operacionales a MySQL sin filtrar entidades del dominio. |
+| Node.js | `>=20` | Runtime y ejecución del API del marketplace. | Encapsula la lógica de aplicación, casos de uso y seguridad. El dominio no depende de globals de Node. |
+| TypeScript | `^5` | Lenguaje tipado del backend. | Tipa entidades, puertos y casos de uso; el dominio solo usa tipos del lenguaje. |
+| Express + mysql2 | `^4` / `^3` | Framework HTTP y driver MySQL. | Los controladores Express son adaptadores de entrada; mysql2 implementa los output ports relacionales sin filtrar el dominio. |
 | MySQL | Docker image `8.0` | Datos operacionales transaccionales. | Almacena usuarios, productos, inventario, pedidos y estado relacional asociado. |
 | MongoDB | Docker image `6.0` | Historial de auditoría. | Almacena registros append-orientation de forma independiente a los agregados transaccionales. |
 | MongoDB Driver | `^4.10.0` | Conexión a MongoDB para la capa de infraestructura. | Implementa el output port de auditoría sin filtrar el dominio. |
 | JWT | API security boundary | Carry la identidad autenticada y la reclamación de rol. | La API firma y verifica tokens; la autorización se aplica en el servidor para cada operación protegida. |
-| `dotenv` | `^17.4.2` | Carga la configuración de runtime desde variables de entorno. | Mantiene puertos, conexiones de base de datos y umbrales fuera del código fuente. |
-| Springdoc OpenAPI | `^2.3.0` | Documentación de la API REST. | Hace explícito el contrato HTTP y los esquemas de entrada/salida. |
-| Lombok | `^1.18.30` | Reduce la verbosidad de las entidades y DTOs. | Solo en la capa de aplicación/infraestructura; el dominio permanece limpio. |
+| `dotenv` | `^16` | Carga la configuración de runtime desde variables de entorno. | Mantiene puertos, conexiones de base de datos y umbrales fuera del código fuente. |
+| Zod | `^3` | Validación de DTOs y esquemas de entrada. | Valida en la capa de presentación/infraestructura antes de llegar al dominio. |
 
 #### Backend technology flow
 
 ```text
 Request HTTP
-  -> Spring Security filter y controladores REST
+  -> middleware Express y controladores REST
   -> validación de DTO y mapeo
   -> input port por rol
   -> implementación de caso de uso
   -> entidades, value objects y servicios de dominio
   -> output port
-  -> Spring Data JPA / MySQL o MongoDB Driver / MongoDB adapter
+  -> mysql2 Repository Adapters / MySQL o MongoDB Driver / MongoDB adapter (auditoría exclusiva)
 ### Frontend technologies
 
 | Technology | Version in project | Role | Boundary and rationale |
@@ -131,19 +130,13 @@ Interacción del navegador
 .
 +-- backend/
 |   +-- src/
-|   |   +-- main/
-|   |   |   +-- java/
-|   |   |   |   +-- com/
-|   |   |   |       +-- nexusmarket/
-|   |   |   |           +-- application/   # Casos de uso y servicios de aplicación
-|   |   |   |           +-- domain/        # Entidades, value objects, excepciones, ports
-|   |   |   |           +-- infrastructure/ # JPA, MongoDB, seguridad y adaptadores
-|   |   |   |           +-- NexusMarketApplication.java
-|   |   |   +-- resources/
-|   |   +-- test/
-|   |       +-- java/
+|   |   +-- application/   # Casos de uso y servicios de aplicación
+|   |   +-- domain/        # Entidades, value objects, excepciones, ports
+|   |   +-- infrastructure/ # mysql2 repositories, MongoDB auditoría, seguridad y adaptadores HTTP
+|   |   +-- index.ts       # Composición Express + arranque
+|   +-- package.json
+|   +-- tsconfig.json
 |   +-- Dockerfile
-|   +-- pom.xml
 |   +-- .env.example
 +-- frontend/
 |   +-- src/
@@ -236,14 +229,14 @@ docker compose ps
 Open:
 
 - Frontend: http://localhost:5173
-- Backend health: http://localhost:8080/health
+- Backend health: http://localhost:3000/api/v1/users
 
 Expected services:
 
 | Service | Purpose | Address |
 |---|---|---|
 | `frontend` | React application served by Nginx | `localhost:5173` |
-| `market-api` | Spring Boot REST API | `localhost:8080` |
+| `market-api` | Node.js Express REST API | `localhost:3000` |
 | `mysql-db` | Relational persistence | host `3306`, container `3306` |
 | `mongo-db` | Audit persistence | `localhost:27017` |
 
@@ -270,22 +263,23 @@ docker compose down -v
 
 ## Validation
 
-Backend build and tests inside Docker:
+Backend build and typecheck inside backend/:
 
 ```powershell
-docker compose exec market-api mvn clean verify
+npm run build
+npx tsc --noEmit -p tsconfig.json
 ```
 
-Backend seed data (development data):
+Backend tests:
 
 ```powershell
-docker compose exec market-api mvn spring-boot:run -Dspring-boot.run.arguments=--spring.batch.initializer.enabled=false
+npm test
 ```
 
 Frontend validation image:
 
 ```powershell
-docker build --target build --build-arg VITE_API_BASE_URL=http://localhost:8080 -t nexusmarket-frontend-validation ./frontend
+docker build --target build --build-arg VITE_API_BASE_URL=http://localhost:3000 -t nexusmarket-frontend-validation ./frontend
 docker run --rm nexusmarket-frontend-validation npm run lint
 docker run --rm nexusmarket-frontend-validation npm run test -- --run
 ```
@@ -293,7 +287,7 @@ docker run --rm nexusmarket-frontend-validation npm run test -- --run
 Frontend live tests, with the backend already running:
 
 ```powershell
-docker run --rm --network host -e LIVE_BASE_URL=http://localhost:8080 nexusmarket-frontend-validation npm run test:live
+docker run --rm --network host -e LIVE_BASE_URL=http://localhost:3000 nexusmarket-frontend-validation npm run test:live
 ```
 
 Screenshot evidence:
@@ -323,7 +317,7 @@ Visual evidence is stored under `frontend/test/screenshots/` and includes mobile
 
 **SimonMetaute**
 
-This project was developed as a portfolio-oriented demonstration of full-stack Java and TypeScript, domain modeling, hexagonal architecture, secure API design and Docker-based delivery.
+This project was developed as a portfolio-oriented demonstration of full-stack Node.js and TypeScript, domain modeling, hexagonal architecture, secure API design and Docker-based delivery.
 
 ## License
 

@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import type { CreateProductUseCase } from '../../../application/use-cases/CreateProductUseCase.js';
 import { SkuAlreadyExistsError } from '../../../application/use-cases/CreateProductUseCase.js';
+import { ProductMapper } from '../mappers/ProductMapper.js';
 
 export class ProductController {
   private readonly createProductUseCase: CreateProductUseCase;
@@ -12,7 +13,7 @@ export class ProductController {
   async createProduct(req: Request, res: Response): Promise<void> {
     try {
       const product = await this.createProductUseCase.execute(req.body);
-      res.status(201).json(product);
+      res.status(201).json(ProductMapper.toResponse(product));
     } catch (error) {
       if (error instanceof SkuAlreadyExistsError) {
         res.status(409).json({ message: error.message });

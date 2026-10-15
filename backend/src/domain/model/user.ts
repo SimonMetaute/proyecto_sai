@@ -87,6 +87,7 @@ export class User {
   private readonly _firstName: string;
   private readonly _lastName: string;
   private readonly _email: string;
+  private readonly _password: string;
   private readonly _phone: string;
   private readonly _identityDocument: IdentityDocument;
   private readonly _registrationDate: Date;
@@ -99,6 +100,7 @@ export class User {
     firstName: string;
     lastName: string;
     email: string;
+    password: string;
     phone: string;
     identityDocument: IdentityDocument;
     registrationDate: Date;
@@ -118,6 +120,9 @@ export class User {
     if (!params.email || params.email.trim().length === 0) {
       throw new Error('User.email is required.');
     }
+    if (!params.password || params.password.trim().length === 0) {
+      throw new Error('User.password is required.');
+    }
     if (!(params.identityDocument instanceof IdentityDocument)) {
       throw new Error('User.identityDocument must be a valid IdentityDocument.');
     }
@@ -127,6 +132,7 @@ export class User {
     this._firstName = params.firstName.trim();
     this._lastName = params.lastName.trim();
     this._email = params.email.trim();
+    this._password = params.password;
     this._phone = params.phone;
     this._identityDocument = params.identityDocument;
     this._registrationDate = params.registrationDate;
@@ -152,6 +158,10 @@ export class User {
 
   get email(): string {
     return this._email;
+  }
+
+  get password(): string {
+    return this._password;
   }
 
   get phone(): string {

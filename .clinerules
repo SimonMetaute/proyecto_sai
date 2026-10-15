@@ -1,0 +1,11 @@
+# NexusMarket - Reglas Obligatorias del Proyecto
+
+1. Stack Tecnológico: Todo el backend debe desarrollarse en Node.js, TypeScript y Express. Nunca generar código en Java o Spring Boot.
+
+2. Arquitectura: Es obligatorio el uso estricto de Arquitectura Hexagonal y Domain-Driven Design (DDD). La capa de Dominio (src/domain) debe ser pura y no tener ninguna dependencia de bases de datos, frameworks HTTP (Express) o librerías externas.
+
+3. Persistencia Políglota Obligatoria: MySQL se utilizará exclusivamente para datos operacionales y transaccionales (Usuarios, Productos, Pedidos, Inventario). MongoDB se utilizará de forma estricta y exclusiva para el Historial de Auditoría (registro de operaciones 'append-only').
+
+4. Contratos SDD: Nunca inventar endpoints, roles, funcionalidades o flujos que no estén documentados en los archivos de la carpeta SDD/.
+
+5. Validación: Validar siempre que el código compile sin errores usando tsc --noEmit antes de dar por terminada una tarea.

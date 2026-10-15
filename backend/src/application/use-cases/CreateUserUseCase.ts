@@ -15,6 +15,7 @@
  *  - Enforces the business rule "Email must be unique in the system."
  *    (SDD Section 2.1) at this layer, since it requires querying persistence.
  */
+import bcrypt from 'bcrypt';
 import { User, IdentityDocument, UserType } from '../../domain/model/user.js';
 import type { UserRepository } from '../../domain/ports/out/UserRepository.js';
 
@@ -28,6 +29,7 @@ export interface CreateUserParams {
   firstName: string;
   lastName: string;
   email: string;
+  password: string;
   phone: string;
   identityDocumentType: string;
   identityDocumentNumber: string;
@@ -76,12 +78,14 @@ export class CreateUserUseCase {
 
     // 2. Build the domain aggregate (system-generated fields use built-ins).
     const now = new Date();
+    const passwordHash = await bcrypt.hash(params.password, 10);
     const user = new User({
       userId: globalThis.crypto.randomUUID(),
       userType: params.userType,
       firstName: params.firstName,
       lastName: params.lastName,
       email: params.email,
+      password: passwordHash,
       phone: params.phone,
       identityDocument: new IdentityDocument(
         params.identityDocumentType,

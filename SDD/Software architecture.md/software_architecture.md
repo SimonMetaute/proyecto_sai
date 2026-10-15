@@ -343,6 +343,8 @@ Ejemplos:
 - Kafka event publisher
 - Redis cache adapter
 
+> Regla de persistencia (cambio de stack autorizado): MySQL (vía adaptadores `mysql2`) maneja todas las entidades transaccionales (usuarios, productos, inventario, pedidos); MongoDB maneja exclusivamente la auditoría append-only. El dominio no depende de ninguna de las dos.
+
 ## 8. Flujos arquitectónicos principales
 
 ### 8.1 Flujo de compra
