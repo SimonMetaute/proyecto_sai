@@ -321,7 +321,7 @@ Visual evidence is stored under `frontend/test/screenshots/` and includes mobile
 
 ## Author
 
-**andfsanchezag**
+**SimonMetaute**
 
 This project was developed as a portfolio-oriented demonstration of full-stack Java and TypeScript, domain modeling, hexagonal architecture, secure API design and Docker-based delivery.
 
