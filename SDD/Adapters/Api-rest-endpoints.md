@@ -38,9 +38,15 @@ X-Request-ID: <correlation-id>  (optional, logged for tracing)
 ```
 
 ### Authentication
-- All endpoints except Public Access require a valid JWT token.
-- Missing or invalid tokens return `401 AUTHENTICATION_REQUIRED`.
-- Valid token but insufficient role returns `403 FORBIDDEN`.
+- La norma RG-01 (SDD/enunciado.md §8) aplica a toda la operación de rol protegido: todos los
+  endpoints excepto las excepciones públicas explícitas requieren un usuario autenticado.
+- Excepciones públicas acordadas (PublicAccessPort: autenticación y visibilidad de catálogo):
+  - `POST /api/v1/auth/login`
+  - `POST /api/v1/auth/register/buyer`
+  - `GET /api/v1/catalog/products`
+  - `GET /api/v1/catalog/products/{productId}`
+- Los demás endpoints devuelven `401 AUTHENTICATION_REQUIRED` (token ausente o inválido) o
+  `403 FORBIDDEN` (token válido, rol insuficiente).
 
 ---
 
@@ -129,43 +135,18 @@ X-Request-ID: <correlation-id>  (optional, logged for tracing)
 
 ---
 
-### 3.4. Self-Register Seller
-**POST** `/api/v1/auth/register/seller`
+### 3.4. Seller Onboarding (ADMINISTRATOR only — no public self-registration)
 
-**Authentication:** None (Public)
-
-**Request Body:**
-```json
-{
-  "email": "newseller@example.com",
-  "password": "secure_password",
-  "businessName": "My Store",
-  "identification": "1234567890",
-  "personType": "NATURAL_PERSON|LEGAL_PERSON",
-  "phoneNumber": "+1234567890"
-}
-```
-
-**Response (201 Created):**
-```json
-{
-  "userId": "user-002",
-  "email": "newseller@example.com",
-  "role": "SELLER",
-  "sellerId": "seller-001",
-  "verificationStatus": "PENDING",
-  "message": "Seller registered. Awaiting identity verification."
-}
-```
-
-**Error Responses:**
-- `400 INVALID_REQUEST` - Missing required fields
-- `409 RESOURCE_ALREADY_EXISTS` - Email already registered
-- `422 INVALID_DOMAIN_VALUE` - Invalid identification or business name
+> El antiguo endpoint público `POST /api/v1/auth/register/seller` (SDD/APIs §3.4) se eliminó
+> durante la alineación contractual: prevalece `SDD/enunciado.md` §7.3
+> (`Regla de negocio: los vendedores no pueden autorregistrarse; son incorporados por el
+> administrador`). El onboardeo de vendedores lo realiza el ADMINISTRATOR mediante
+> `AdministratorPort.registerSeller(...)`; el mapeo HTTPS a endpoint admin-only se incorporará
+> en la fase de implementación. Sin código backend en esta ejecución.
 
 ---
 
-### 3.5. Search Public Catalog
+### 3.4. Search Public Catalog
 **GET** `/api/v1/catalog/products?category=&search=&minPrice=&maxPrice=&page=1&limit=20`
 
 **Authentication:** None (Public)
@@ -209,7 +190,7 @@ X-Request-ID: <correlation-id>  (optional, logged for tracing)
 
 ---
 
-### 3.6. Consult Public Product Details
+### 3.5. Consult Public Product Details
 **GET** `/api/v1/catalog/products/{productId}`
 
 **Authentication:** None (Public)
@@ -516,7 +497,7 @@ X-Request-ID: <correlation-id>  (optional, logged for tracing)
 }
 ```
 
-**Response (201 Created):**
+**Respuesta exitosa**
 ```json
 {
   "lineId": "line-001",
@@ -532,9 +513,22 @@ X-Request-ID: <correlation-id>  (optional, logged for tracing)
 }
 ```
 
+**Semántica de la operación (acordada)**
+- `BuyerPort.addItemToCart` es un upsert por (`productId`, `variantId`): si el producto ya está
+  en el carrito, se incrementa la cantidad de la línea existente (reglas de merge del carrito,
+  cart-services.md: reglas 5 y 41-43). Incorporar una línea ya presente es una operación
+  **EXITOSA**, no un bloqueo.
+- Respuesta `201 Created` para línea **nueva**; si la línea ya existía se devuelve
+  `200 OK` con la cantidad actualizada. Ninguna ruta de éxito devuelve `409`.
+- `409 RESOURCE_ALREADY_EXISTS` se reserva para operaciones realmente bloqueadas por un
+  recurso o estado conflictivo (Contract-alignment.md §6): p. ej. checkout sobre carrito
+  ya convertido a pedido (§4.14).
+
 **Error Responses:**
+- `400 INVALID_REQUEST` - Missing required fields
 - `404 RESOURCE_NOT_FOUND` - Product or variant not found
-- `409 RESOURCE_ALREADY_EXISTS` - Item already in cart (increments quantity instead)
+- `422 INVALID_DOMAIN_VALUE` - quantity must be a positive integer (regla de dominio
+  cart-services.md, regla 5; mapeo global del 422 del propio API)
 
 ---
 

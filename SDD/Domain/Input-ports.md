@@ -41,7 +41,6 @@ public interface PublicAccessPort {
     User login(Email email, Password password);
     void logout(User user);
     User registerBuyer(Buyer buyer);
-    User registerSeller(Seller seller);
     
     // Catalog Visibility
     List<Product> searchPublicCatalog(SearchCriteria criteria);
@@ -76,6 +75,11 @@ public interface BuyerPort {
     // Shopping Cart
     ShoppingCart createCart(User user);
     ShoppingCart consultMyCart(User user);
+    /**
+     * Añade una línea al carrito del buyer.
+     * Semántica upsert: si (producto, variante) ya está en el carrito, se incrementa la cantidad (merge, regla de negocio del carrito).
+     * Un duplicado exitoso NO devuelve 409: el 409 es solo para operaciones bloqueadas por recurso/estado (Contract-alignment.md §6).
+     */
     ShoppingCart addItemToCart(User user, ShoppingCart cart, Product product, ProductVariant variant, Quantity quantity);
     ShoppingCart updateCartItem(User user, ShoppingCart cart, CartLine line, Quantity newQuantity);
     ShoppingCart removeCartItem(User user, ShoppingCart cart, CartLine line);
@@ -253,7 +257,8 @@ public interface AdministratorPort {
     Seller approveSeller(User user, Seller seller);
     Seller rejectSeller(User user, Seller seller, String reason);
     Seller revokeSellerAccess(User user, Seller seller, String reason);
-    Seller changeSeller Status(User user, Seller seller, SellerVerificationStatus newStatus);
+    /** Cambia el estado de verificación del vendedor (guardián de la transición: approveSeller / rejectSeller / revokeSellerAccess). */
+    Seller changeSellerVerificationStatus(User user, Seller seller, SellerVerificationStatus newStatus);
     SellerComplianceReview reviewSellerCompliance(User user, Seller seller);
     
     // Product Catalog Control

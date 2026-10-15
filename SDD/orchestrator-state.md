@@ -5,6 +5,23 @@ para gestionar el estado de las ejecuciones del orquestador sobre la
 implementación de NexusMarket: contratos, dominio, puertos, endpoints REST,
 pruebas y entrega.
 
+## Run record (run-2026-10-15-contract-alignment-03: REPAIR_CONTRACT alineación contractual — 2026-10-15)
+
+- runId: run-2026-10-15-contract-alignment-03
+- fecha: 2026-10-15
+- fase: REPAIR_CONTRACT — alineación contractual (sin código backend)
+- archivos: SDD/Adapters/Api-rest-endpoints.md, SDD/Domain/Input-ports.md, SDD/Domain/Services/curstomer-services.md (renombrado → customer-services.md), SDD/orchestrator-state.md
+- decisión:
+  - addItemToCart: upsert por (producto, variante). Línea existente → cantidad incrementada (200 OK); línea nueva (201 Created). El 409 solo es para operaciones bloqueadas (Contract-alignment.md §6). Se quita el 409 de §4.11 y se documenta la semántica en BuyerPort.
+  - changeSeller Status: operación malformada eliminada; puerto corregido a changeSellerVerificationStatus(User user, Seller seller, SellerVerificationStatus newStatus) (patrón naming del puerto + value object SellerVerificationStatus; la transición la implementa el dominio vía approve/reject/revoke, API §7.3-7.5).
+  - Registro de vendedores: enunciado.md §7.3 prevalece (no autorregistro; el ADMINISTRATOR incorpora al vendedor). Endpoint público §3.4 eliminado de la API; PublicAccessPort pierde registerSeller; registerSeller → AdministratorPort (admin-only).
+  - RG-01: aplica a todas las operaciones de rol protegido; excepciones públicas acordadas: login, registerBuyer y catálogo público (GET /api/v1/catalog/products, GET /api/v1/catalog/products/{productId}).
+  - Endpoints 204: revisión — logout, remove delivery address y remove cart item ejecutan operaciones de dominio; sin hallazgos.
+  - curstomer-services.md → customer-services.md: renombrado de fichero; los enlaces ya usan el nombre correcto.
+- evidencia: Input-ports.md l.256 (malformado), l.44 (registerSeller público), l.79 (addItemToCart); Api-rest-endpoints.md l.132-167 (§3.4), l.505-537 (§4.11); cart-services.md l.628-634 (AddItemToCartUseCase/MergeCartUseCase); vendor-services.md l.17 (approve/reject/restrict); Contract-alignment.md §6 y §1; enunciado.md l.133; Select-String 204 → líneas 89/383/570.
+- estado: IN_PROGRESS (API REST y puertos alineados; pruebas unitarias/integración/REST no ejecutadas; nunca COMPLETE).
+- siguienteAccion: ejecutar el alignment gate (suites de carrito, vendedor, catálogo, admin; REST integration); re-evaluar VERIFIED/BLOCKED; actualizar matriz §5.2 e informe de cierre.
+- bloqueos (criterio de producto): ninguno. Todas las discrepancias se resolvieron con criterio documental según Contract-alignment.md §1.
 ## Run record (run-02: alineación de contratos + diagnóstico inicial — 2026-10-14)
 - runId: run-2026-10-14-contract-alignment-02
 - fase: `REPAIR_CONTRACT` — alineación documental Java/TypeScript y diagnóstico
@@ -58,8 +75,8 @@ pruebas y entrega.
 | Especificación funcional | SDD/enunciado.md | VERIFIED | ninguna | documentos presentes |
 | Modelo de dominio | SDD/Domain/Domain_model.md | VERIFIED | ninguna | revisión de agregados |
 | Servicios de dominio | SDD/Domain/Domain_services.md, SDD/Domain/Services/*-services.md | VERIFIED | ninguna | revisión end-to-end |
-| Puertos de entrada/salida | SDD/Domain/Input-ports.md, SDD/Domain/Output-ports.md | VERIFIED | ninguna | revisión de operaciones |
-| Contratos REST | SDD/Adapters/Api-rest-endpoints.md | PARTIAL | resolver addItemToCart y changeSeller Status | ejecución del alignment gate |
+| Puertos de entrada/salida | SDD/Domain/Input-ports.md, SDD/Domain/Output-ports.md | IN_PROGRESS | `changeSellerVerificationStatus` corregido; `registerSeller` movido a `AdministratorPort` |
+| Contratos REST | SDD/Adapters/Api-rest-endpoints.md | IN_PROGRESS | §3.4 vendedor público eliminado; §4.11 reconciliado (409 → 200/201); excepciones públicas explicitadas |
 | Arquitectura | SDD/Software architecture.md/software_architecture.md | VERIFIED | ninguna | revisión de capas |
 | Seguridad y autorización | Orchestrator-prompt.md + contratos | VERIFIED | ninguna | JWT, roles, CORS |
 | Persistencia | MySQL 3306, MongoDB 27017 | CANONICAL | ninguna | configuración de datasources |
@@ -86,8 +103,8 @@ pruebas y entrega.
 | Requisito/contrato SDD | Archivo o símbolo | Prueba/comando | Estado | Evidencia |
 |---|---|---|---|---|
 | Registro y identidad de usuarios | SDD/Domain/Domain_model.md, SDD/Domain/Domain_services.md (User, roles) | npm test | PENDING | tests unitarios |
-| Registro de vendedores/proveedores | SDD/Domain/Services/vendor-services.md | npm test | PENDING | test de vendor |
-| Gestión de compradores | SDD/Domain/Services/customer-services.md | npm test | PENDING | test de customer |
+| Registro de vendedores/proveedores | SDD/Domain/Services/vendor-services.md, SDD/Domain/Input-ports.md (AdministratorPort) | npm test | IN_PROGRESS | registerSeller→AdministratorPort; sin endpoint público |
+| Gestión de compradores | SDD/Domain/Services/customer-services.md | npm test | PENDING | fichero renombrado de curstomer-services.md → customer-services.md |
 | Catálogo de productos | SDD/Domain/Services/catalog-services.md | npm test | PENDING | tests de catalog |
 | Inventario distribuido | SDD/Domain/Services/inventory-services.md | npm test | PENDING | tests de inventory |
 | Carrito de compras | SDD/Domain/Services/cart-services.md | npm test | PENDING | tests de cart |
@@ -98,52 +115,56 @@ pruebas y entrega.
 | Reportes administrativos | SDD/Domain/Services/administration-services.md | npm test | PENDING | tests de admin |
 | Auditoría (Mongo) | SDD/Domain/Input-ports.md, SDD/Domain/Output-ports.md (AuditLogRepositoryPort) | npm test | PENDING | tests de auditoría |
 | Seguridad (JWT, roles, CORS) | Orchestrator-prompt.md + contratos | npm test | PENDING | tests de security |
-| Contrato REST | SDD/Adapters/Api-rest-endpoints.md | npm run build + tests | PARTIAL | alinear addItemToCart |
+| Contrato REST | SDD/Adapters/Api-rest-endpoints.md | npm run build + tests | IN_PROGRESS | §3.4 vendedor público eliminado; §4.11 reconciliado (409 → 200/201); excepciones públicas explicitadas |
 
-## Nota candidata a REPAIR_CONTRACT
-- `addItemToCart`: el contrato REST describe añadir un producto ya presente como
-  `409 RESOURCE_ALREADY_EXISTS`, mientras que la descripción dice que la cantidad
-  del ítem existente se incrementa. Eso es inconsistente; hay que reconciliar el
-  comportamiento, la respuesta y la lista de errores con `BuyerPort.addItemToCart`
-  y el servicio de carrito antes de marcar el endpoint `VERIFIED`.
-- `changeSeller Status`: en el documento de puertos existe una operación malformada
-  con espacio interno (`changeSeller Status`); confirmar el nombre correcto contra
-  el dominio y corregir el puerto, el adaptador y los tests juntos.
-- `curstomer-services.md`: nombre del fichero de servicios de cliente con tipeo
-  erróneo (`curstomer` sin 's'); recomendación de renombrar a `customer-services.md`
-  y actualizar los enlaces. No bloquea la implementación.
-- Endpoints REST que responden `204` sin consultar el recurso ni ejecutar la
-  operación de dominio: revisar contra `Api-rest-endpoints.md` y el dominio
-  (`Api-rest-endpoints.md` es la referencia).
+## Nota candidata a REPAIR_CONTRACT — estado tras run-2026-10-15-contract-alignment-03
+- `addItemToCart`: RESUELTO en documentación (API REST §4.11 + puerto BuyerPort).
+  Incorporar línea ya presente → cantidad incrementada (200 OK); línea nueva (201
+  Created); el 409 solo para operaciones bloqueadas (Contract-alignment.md §6).
+  Tests a ejecutar antes de VERIFIED.
+- `changeSeller Status`: RESUELTO en documentación. Puerto corregido a
+  `changeSellerVerificationStatus(User user, Seller seller, SellerVerificationStatus
+  newStatus)`; la transición se implementa en dominio vía approveSeller/rejectSeller/
+  revokeSellerAccess (vendor-services.md §1.17; API REST §7.3-7.5). Sin código backend.
+- `curstomer-services.md`: RESUELTO — fichero renombrado a customer-services.md.
+  Los enlaces ya usaban el nombre correcto (orchestrator-state §5.2, Domain_services.md).
+- Endpoints REST con 204: REVISADOS — logout (l.89), remove delivery address (l.383) y
+  remove cart item (l.570) ejecutan operaciones de dominio; sin hallazgos.
 ## Informe de cierre (§5.1)
 ```text
 Estado: IN_PROGRESS
 Stack detectado y evidencia:
   - Documentación SDD: Java/TypeScript + React + TypeScript, MySQL + MongoDB
-  - Fase actual: alineación de contratos y documentación (run-02)
-  - Enfoque: arquitectura hexagonal, DDD y trazabilidad por subdominio.
+  - Fase actual: REPAIR_CONTRACT alineación contractual (run-2026-10-15)
+  - Enfoque: Documentacion-first; ajuste de contratos sin código backend.
 Fase/tarea seleccionada y motivo:
+  - run-2026-10-15-contract-alignment-03: REPAIR_CONTRACT alineación de contratos
   - run-02: alineación de contratos NexusMarket + diagnóstico inicial
   - run-01: configuración inicial de la documentación SDD y de los contratos
 Requisitos o contratos afectados:
-  - SDD/Contract-alignment.md, SDD/Domain/*, SDD/Domain/Services/*-services.md,
-    SDD/Adapters/Api-rest-endpoints.md, SDD/Software architecture.md,
-    SDD/Orchestrator-prompt.md
+  - SDD/Contract-alignment.md (§1, §6), SDD/enunciado.md (§7.3, RG-01),
+    SDD/Domain/Input-ports.md, SDD/Adapters/Api-rest-endpoints.md,
+    SDD/Domain/Services/curstomer-services.md,
+    SDD/orchestrator-state.md
 Cambios realizados:
-  - Documentación SDD completa y alineada; se registraron las discrepancias
-    conocidas (addItemToCart, changeSeller Status, curstomer-services.md) y el
-    estado de los entregables en la trazabilidad.
+  - API REST: eliminado §3.4 (registerSeller público); renumeración §3.4-§3.5;
+    ext. públicas explicitadas (RG-01); §4.11 reconciliado (409 → 200/201).
+  - Puertos: registerSeller removido de PublicAccessPort; addItemToCart
+    documentada; changeSeller Status → changeSellerVerificationStatus.
+  - Servicios: renombrado de curstomer-services.md → customer-services.md.
+  - Estado: run-2026-10-15-contract-alignment-03 registrado; matriz §5.2 actualizada.
 Validaciones ejecutadas, comandos y códigos de salida:
-  - git log (10 commits, rama main); revisión de la documentación SDD.
-Pruebas: unitarias / integración / REST: pendiente de implementar.
-Gates aprobados: 0 (pendiente implementar código y ejecutar suites).
+  - git mv SDD/Domain/Services/curstomer-services.md SDD/Domain/Services/customer-services.md
+  - Revisión de SDD/Adapters/Api-rest-endpoints.md y SDD/Domain/Input-ports.md
+  - No se ejecutaron suites unitarias/integración/REST en esta ejecución.
+Pruebas: unitarias / integración / REST: PENDIENTE de ejecución.
+Gates aprobados: 0 (pendiente ejecutar suites).
 Faltantes, discrepancias o bloqueos:
-  - addItemToCart (409 vs incremento de cantidad)
-  - changeSeller Status (operación malformada)
-  - curstomer-services.md (tipeo erróneo del nombre del fichero)
-  - implementación de backend, frontend, pruebas y Docker Compose (bloquean COMPLETE)
-Siguiente acción exacta: implementar el backend (Java + Spring Boot o
-TypeScript + NestJS/Express según decisión), el frontend React + TypeScript,
-las pruebas unitarias/integración y Docker Compose; luego ejecutar el alignment
-gate y re-evaluar COMPLETE cuando se satisfagan las 13 condiciones §6.
+  - Ejecución de suites y pruebas REST (horizonte: avance backend, luego suites).
+  - Validar el mapeo del puerto changeSellerVerificationStatus con
+    approve/reject/revoke del dominio.
+  - Backend, frontend, Docker Compose (bloquean COMPLETE).
+Siguiente acción exacta: ejecutar suites unitarias/integración/REST y el alignment
+gate; re-evaluar VERIFIED/BLOCKED de los endpoints; luego continuar con la
+implementación del backend y frontend y la entrega.
 ```
