@@ -1,5 +1,8 @@
 {
   "dependencies": {
     "typescript": "^7.0.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6"
   }
 }

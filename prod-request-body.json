@@ -1,0 +1,10 @@
+﻿{
+    "basePrice":  1299.99,
+    "productStatus":  "Published",
+    "sku":  "LAP-PRO-15-001",
+    "brand":  "NexusBrand",
+    "category":  "Electronics",
+    "name":  "Laptop Pro 15",
+    "description":  "High performance laptop with 16GB RAM and 512GB SSD",
+    "sellerId":  "seller-123"
+}
